@@ -1,0 +1,226 @@
+@extends('layouts.learninguiux')
+
+@section('title', ($pageTitle ?? 'User') . ' - Learning')
+@section('body_class', 'main-bg main-bg-opac sharpcornerui adminuiux-header-standard adminuiux-sidebar-iconic theme-blue adminuiux-header-transparent adminuiux-sidebar-fill-white bg-gradient-1 scrollup')
+@section('body_attributes', 'data-theme="theme-blue" data-sidebarfill="adminuiux-sidebar-fill-white" data-sidebarlayout="adminuiux-sidebar-iconic" data-headerlayout="adminuiux-header-standard" data-bggradient="bg-gradient-1" data-headerfill="adminuiux-header-transparent"')
+
+@section('content')
+@include('app.partials.admin-header')
+
+<div class="adminuiux-wrap">
+    @include('app.partials.admin-sidebar')
+
+    <main class="adminuiux-content has-sidebar" onclick="contentClick()">
+        <div class="container mt-4" id="main-content">
+
+            {{-- Hero --}}
+            <div class="mb-4 admin-feed-hero">
+                <div class="row align-items-center g-0 p-4 p-lg-5">
+                    <div class="col-12 col-lg-7 admin-feed-hero-copy mb-3 mb-lg-0">
+                        <div class="text-uppercase fw-semibold text-primary mb-2" style="letter-spacing:.3em;font-size:.72rem;">User Workspace</div>
+                        <h1 class="fs-3 fw-semibold mb-2">{{ $pageTitle }}</h1>
+                        <p class="text-secondary mb-0">{{ $pageDescription }}</p>
+                    </div>
+                    <div class="col-12 col-lg-5 d-flex flex-wrap gap-2 justify-content-lg-end">
+                        @if ($managedUser->exists)
+                            <a href="{{ route('app.admin.users.show', ['user' => $managedUser->id]) }}" class="btn btn-outline-theme btn-sm">View User</a>
+                            <a href="{{ route('app.admin.assignments.user', ['user' => $managedUser->id]) }}" class="btn btn-outline-theme btn-sm">Learner Detail</a>
+                            <a href="{{ route('app.admin.assignments.audit', ['target' => $managedUser->id]) }}" class="btn btn-outline-theme btn-sm">Open Audit</a>
+                        @endif
+                        <a href="{{ route('app.admin.users.index') }}" class="btn btn-outline-theme btn-sm">Back to Users</a>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Status flash --}}
+            @if (session('status'))
+                <div class="alert alert-success mb-4">{{ session('status') }}</div>
+            @endif
+
+            {{-- KPI cards --}}
+            <div class="row g-4 mb-4">
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="card adminuiux-card shadow-sm h-100 admin-feed-kpi">
+                        <div class="card-body d-flex flex-column align-items-center text-center p-4">
+                            <div class="admin-feed-kpi-icon mb-3"><i class="bi bi-person-badge fs-3"></i></div>
+                            <div class="admin-feed-kpi-stat">{{ $managedUser->id ?: 'Pending' }}</div>
+                            <div class="fw-semibold mt-1">User ID</div>
+                            <div class="small text-secondary mt-auto pt-2">Identity</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="card adminuiux-card shadow-sm h-100 admin-feed-kpi">
+                        <div class="card-body d-flex flex-column align-items-center text-center p-4">
+                            <div class="admin-feed-kpi-icon mb-3"><i class="bi bi-calendar-event fs-3"></i></div>
+                            <div class="admin-feed-kpi-stat" style="font-size:1.1rem;">{{ $managedUser->created_at?->format('Y-m-d H:i') ?? 'Pending' }}</div>
+                            <div class="fw-semibold mt-1">Created</div>
+                            <div class="small text-secondary mt-auto pt-2">Lifecycle</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="card adminuiux-card shadow-sm h-100 admin-feed-kpi">
+                        <div class="card-body d-flex flex-column align-items-center text-center p-4">
+                            <div class="admin-feed-kpi-icon mb-3" style="color:{{ $managedUser->exists && $managedUser->email_verified_at ? '#0f766e' : '#b45309' }};background:{{ $managedUser->exists && $managedUser->email_verified_at ? 'linear-gradient(135deg, rgba(213, 250, 229, 0.96), rgba(220, 252, 231, 0.96))' : 'linear-gradient(135deg, rgba(254, 243, 199, 0.98), rgba(255, 237, 213, 0.98))' }};">
+                                <i class="bi {{ $managedUser->exists && $managedUser->email_verified_at ? 'bi-envelope-check' : 'bi-envelope' }} fs-3"></i>
+                            </div>
+                            <div class="admin-feed-kpi-stat" style="font-size:1.1rem;">{{ $managedUser->exists ? ($managedUser->email_verified_at?->format('Y-m-d H:i') ?? 'Not verified') : 'Pending' }}</div>
+                            <div class="fw-semibold mt-1">Email Verified</div>
+                            <div class="small text-secondary mt-auto pt-2">Readiness</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="card adminuiux-card shadow-sm h-100 admin-feed-kpi">
+                        <div class="card-body d-flex flex-column align-items-center text-center p-4">
+                            <div class="admin-feed-kpi-icon mb-3" style="color:{{ $managedUser->exists && $managedUser->suspended_at ? '#b45309' : '#0f766e' }};background:{{ $managedUser->exists && $managedUser->suspended_at ? 'linear-gradient(135deg, rgba(254, 243, 199, 0.98), rgba(255, 237, 213, 0.98))' : 'linear-gradient(135deg, rgba(213, 250, 229, 0.96), rgba(220, 252, 231, 0.96))' }};">
+                                <i class="bi {{ $managedUser->exists && $managedUser->suspended_at ? 'bi-pause-circle' : 'bi-check-circle' }} fs-3"></i>
+                            </div>
+                            <div class="admin-feed-kpi-stat">{{ $managedUser->exists ? ($managedUser->suspended_at ? 'Suspended' : 'Active') : 'Active' }}</div>
+                            <div class="fw-semibold mt-1">Access Status</div>
+                            <div class="small text-secondary mt-auto pt-2">Security</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Edit form --}}
+            <div class="card adminuiux-card shadow-sm mb-4">
+                <div class="card-header bg-primary-subtle">
+                    <div class="fw-semibold">Account Details</div>
+                    <div class="small text-secondary mt-1">Update identity, role, and access settings for this account.</div>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ $formAction }}">
+                        @csrf
+                        @if ($formMethod !== 'POST')
+                            @method($formMethod)
+                        @endif
+
+                        <div class="row g-3">
+                            {{-- Name --}}
+                            <div class="col-12 col-md-6">
+                                <label for="name" class="form-label">Name</label>
+                                <input id="name" type="text" name="name" value="{{ old('name', $managedUser->name) }}" class="form-control form-control-sm" required>
+                                @error('name') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                            </div>
+
+                            {{-- Email --}}
+                            <div class="col-12 col-md-6">
+                                <label for="email" class="form-label">Email</label>
+                                <input id="email" type="email" name="email" value="{{ old('email', $managedUser->email) }}" class="form-control form-control-sm" required>
+                                <div class="form-text">Changing the email clears the current email verification timestamp.</div>
+                                @error('email') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                            </div>
+
+                            {{-- Role --}}
+                            <div class="col-12 col-md-6">
+                                <label for="role" class="form-label">Role</label>
+                                <select id="role" name="role" class="form-select form-select-sm">
+                                    <option value="">Select a role</option>
+                                    @foreach (($availableRoleOptions ?? []) as $value => $label)
+                                        <option value="{{ $value }}" @selected(old('role', array_search($managedUser->preference?->role, $availableRoleOptions ?? [], true)) === $value)>{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                                <div class="form-text">Choose the staff role used for directory filters, reporting, and team views.</div>
+                                @error('role') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                            </div>
+
+                            {{-- Team --}}
+                            <div class="col-12 col-md-6">
+                                <label for="team" class="form-label">Team</label>
+                                <select id="team" name="team" class="form-select form-select-sm">
+                                    <option value="">Select a team</option>
+                                    @foreach (($availableTeamOptions ?? []) as $value => $label)
+                                        <option value="{{ $value }}" @selected(old('team', array_search($managedUser->preference?->team, $availableTeamOptions ?? [], true)) === $value)>{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                                <div class="form-text">Assign the user to the school team that should drive reporting and compliance grouping.</div>
+                                @error('team') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                            </div>
+
+                            {{-- Admin checkbox --}}
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input type="checkbox" name="is_admin" value="1" class="form-check-input" id="is_admin" @checked(old('is_admin', $managedUser->is_admin))>
+                                    <label class="form-check-label" for="is_admin">Admin access</label>
+                                </div>
+                                <div class="form-text">
+                                    @if ($managedUser->exists)
+                                        If you uncheck this on your own account, the system keeps your admin access to prevent lockout.
+                                    @else
+                                        Enable this only for trusted operator accounts.
+                                    @endif
+                                </div>
+                            </div>
+
+                            {{-- Account active checkbox --}}
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input type="checkbox" name="account_active" value="1" class="form-check-input" id="account_active" @checked(old('account_active', ! $managedUser->suspended_at))>
+                                    <label class="form-check-label" for="account_active">Account active</label>
+                                </div>
+                                <div class="form-text">
+                                    @if ($managedUser->exists)
+                                        Uncheck to suspend login access while preserving assignments, progress, and audit history.
+                                    @else
+                                        New accounts are active by default.
+                                    @endif
+                                </div>
+                            </div>
+
+                            {{-- Magic link (create only) --}}
+                            @unless ($managedUser->exists)
+                                <div class="col-12">
+                                    <div class="card bg-light">
+                                        <div class="card-body py-3 px-3">
+                                            <div class="form-check">
+                                                <input type="checkbox" name="send_magic_link" value="1" class="form-check-input" id="send_magic_link"
+                                                    @checked(old('send_magic_link'))
+                                                    onchange="document.getElementById('password-fields').style.display = this.checked ? 'none' : ''">
+                                                <label class="form-check-label fw-semibold" for="send_magic_link">
+                                                    <i class="bi bi-envelope-check me-1"></i> Send magic link instead of setting a password
+                                                </label>
+                                            </div>
+                                            <div class="form-text mt-1">The user will receive an email with a one-click login link (valid for 48 hours). No password needed.</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endunless
+
+                            {{-- Password fields --}}
+                            <div class="col-12" id="password-fields" @unless($managedUser->exists) style="{{ old('send_magic_link') ? 'display:none' : '' }}" @endunless>
+                                <div class="row g-3">
+                                    <div class="col-12 col-md-6">
+                                        <label for="password" class="form-label">{{ $managedUser->exists ? 'New Password' : 'Password' }}</label>
+                                        <input id="password" type="password" name="password" class="form-control form-control-sm" autocomplete="new-password">
+                                        <div class="form-text">
+                                            @if ($managedUser->exists)
+                                                Leave blank to keep the current password.
+                                            @else
+                                                Set the initial password for this account.
+                                            @endif
+                                        </div>
+                                        @error('password') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                                    </div>
+                                    <div class="col-12 col-md-6">
+                                        <label for="password_confirmation" class="form-label">{{ $managedUser->exists ? 'Confirm New Password' : 'Confirm Password' }}</label>
+                                        <input id="password_confirmation" type="password" name="password_confirmation" class="form-control form-control-sm" autocomplete="new-password">
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- Submit --}}
+                            <div class="col-12 d-flex justify-content-end pt-2">
+                                <button type="submit" class="btn btn-theme">{{ $submitLabel }}</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </main>
+</div>
+@endsection
