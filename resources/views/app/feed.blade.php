@@ -248,7 +248,7 @@
                                 </div>
                                 <h3 class="mb-0">{{ $dashboardSummary['in_progress_total'] ?? 0 }}</h3>
                                 <p class="fw-medium mb-1">In Progress</p>
-                                <p class="text-secondary small mb-2">Active courses</p>
+                                <p class="text-secondary small mb-2">Active course enrolments</p>
                                 <span class="badge bg-primary-subtle text-primary">{{ $averageProgress }}% avg progress</span>
                             </div>
                         </div>
@@ -274,7 +274,7 @@
                                 </div>
                                 <h3 class="mb-0">{{ $dashboardSummary['completed_total'] ?? 0 }}</h3>
                                 <p class="fw-medium mb-1">Completed</p>
-                                <p class="text-secondary small mb-2">Finished modules</p>
+                                <p class="text-secondary small mb-2">Finished courses</p>
                                 <span class="badge bg-success-subtle text-success">{{ $completionRate }}% rate</span>
                             </div>
                         </div>

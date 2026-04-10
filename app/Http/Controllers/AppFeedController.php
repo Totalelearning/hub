@@ -410,16 +410,31 @@ class AppFeedController extends Controller
                 : ($assignmentSummary['required_due_soon'] > 0 ? 'Watchlist' : 'On track'),
         ];
 
+        // Course-level enrolment stats from course_user pivot
+        $courseEnrolments = \Illuminate\Support\Facades\DB::table('course_user')
+            ->where('user_id', $userId)
+            ->select('status')
+            ->get();
+        $courseCompletedCount = $courseEnrolments->where('status', 'completed')->count();
+        $courseInProgressCount = $courseEnrolments->where('status', 'in_progress')->count();
+        $courseTotalCount = $courseEnrolments->count();
+        $courseCompletionRate = $courseTotalCount > 0
+            ? (int) round(($courseCompletedCount / $courseTotalCount) * 100)
+            : 0;
+
         $dashboardSummary = [
             'visible_total' => $modules->count(),
             'required_total' => $assignmentSummary['required_total'],
-            'completed_total' => $completedModules->count(),
-            'in_progress_total' => $inProgressModules->count(),
+            'completed_total' => $courseCompletedCount,
+            'in_progress_total' => $courseInProgressCount,
+            'courses_total' => $courseTotalCount,
             'saved_total' => count($savedModuleIds),
             'pending_reminders_total' => $pendingReminders->count(),
             'reinforcement_total' => $reinforcementSummary['total'],
-            'average_progress_percent' => $visibleProgressAverage,
-            'completion_rate_percent' => $completionRate,
+            'average_progress_percent' => $courseTotalCount > 0
+                ? (int) round(($courseCompletedCount * 100 + $courseInProgressCount * 50) / $courseTotalCount)
+                : 0,
+            'completion_rate_percent' => $courseCompletionRate,
             'next_due_at' => $nextDueAt,
         ];
 
@@ -450,6 +465,12 @@ class AppFeedController extends Controller
                 $course->setAttribute('course_completed_modules', $completed);
             });
         }
+
+        // Override module-level completion rate with course-level
+        $completionRate = $courseCompletionRate;
+        $averageProgress = $courseTotalCount > 0
+            ? (int) round(($courseCompletedCount * 100 + $courseInProgressCount * 50) / $courseTotalCount)
+            : 0;
 
         return view('app.feed', [
             'modules' => $modules,

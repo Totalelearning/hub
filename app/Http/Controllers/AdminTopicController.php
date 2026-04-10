@@ -5,12 +5,15 @@ namespace App\Http\Controllers;
 use App\Models\Topic;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 
 class AdminTopicController extends Controller
 {
     public function store(Request $request): RedirectResponse
     {
+        Gate::authorize('admin-access');
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:100'],
         ]);
@@ -35,6 +38,8 @@ class AdminTopicController extends Controller
 
     public function destroy(Topic $topic): RedirectResponse
     {
+        Gate::authorize('admin-access');
+
         $name = $topic->name;
         $topic->delete();
 

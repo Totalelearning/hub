@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Models\UserPreference;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -18,6 +19,8 @@ class AdminCourseController extends Controller
 {
     public function index(): View
     {
+        Gate::authorize('admin-access');
+
         $courses = Course::withCount('modules')
             ->with('owner')
             ->orderByDesc('updated_at')
@@ -28,6 +31,8 @@ class AdminCourseController extends Controller
 
     public function create(): View
     {
+        Gate::authorize('admin-access');
+
         $modules = LearningModule::orderBy('title')->get(['id', 'title', 'topic', 'source_type']);
 
         return view('app.admin-courses-form', [
@@ -41,6 +46,8 @@ class AdminCourseController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        Gate::authorize('admin-access');
+
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
@@ -78,6 +85,8 @@ class AdminCourseController extends Controller
 
     public function edit(Course $course): View
     {
+        Gate::authorize('admin-access');
+
         $course->load('modules');
         $modules = LearningModule::orderBy('title')->get(['id', 'title', 'topic', 'source_type']);
         $selectedModuleIds = $course->modules->pluck('id')->all();
@@ -107,6 +116,8 @@ class AdminCourseController extends Controller
 
     public function update(Request $request, Course $course): RedirectResponse
     {
+        Gate::authorize('admin-access');
+
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
@@ -142,6 +153,8 @@ class AdminCourseController extends Controller
 
     public function bulkTransition(Request $request): RedirectResponse
     {
+        Gate::authorize('admin-access');
+
         $validated = $request->validate([
             'status' => ['required', 'in:draft,published,archived'],
             'course_ids' => ['required', 'array'],
@@ -158,6 +171,8 @@ class AdminCourseController extends Controller
 
     public function destroy(Course $course): RedirectResponse
     {
+        Gate::authorize('admin-access');
+
         $title = $course->title;
         $course->delete();
 

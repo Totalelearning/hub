@@ -214,7 +214,7 @@ class PrototypeDemoSeeder extends Seeder
             ['email' => self::DEMO_ADMIN_EMAIL],
             [
                 'name' => 'Admin',
-                'password' => Hash::make('Car.van1'),
+                'password' => Hash::make('password'),
                 'is_admin' => true,
                 'email_verified_at' => now(),
             ],

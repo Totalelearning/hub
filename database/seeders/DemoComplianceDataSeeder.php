@@ -139,7 +139,10 @@ class DemoComplianceDataSeeder extends Seeder
         // Step 3: Update existing "assigned" enrolments with varied completions
         $this->progressEnrolments($courses);
 
-        // Step 4: Create reinforcement attempts for completed users
+        // Step 4: Create module progress records to match course enrolment statuses
+        $this->syncModuleProgress($courses);
+
+        // Step 5: Create reinforcement attempts for completed users
         $this->createReinforcementAttempts($courses);
 
         $this->command->info('Demo compliance data seeded successfully.');
@@ -243,6 +246,102 @@ class DemoComplianceDataSeeder extends Seeder
             }
             // else stays as "assigned" (not started)
         }
+    }
+
+    private function syncModuleProgress($courses): void
+    {
+        // Build a map of course_id => [module_ids]
+        $modulesByCourse = [];
+        foreach ($courses as $course) {
+            $moduleIds = DB::table('course_module')
+                ->where('course_id', $course->id)
+                ->orderBy('sort_order')
+                ->pluck('learning_module_id')
+                ->toArray();
+
+            if (! empty($moduleIds)) {
+                $modulesByCourse[$course->id] = $moduleIds;
+            }
+        }
+
+        // Get all enrolments that have a status beyond "assigned"
+        $enrolments = DB::table('course_user')
+            ->whereIn('status', ['in_progress', 'completed'])
+            ->select('course_id', 'user_id', 'status', 'completed_at', 'updated_at')
+            ->get();
+
+        $created = 0;
+
+        foreach ($enrolments as $enrolment) {
+            $moduleIds = $modulesByCourse[$enrolment->course_id] ?? [];
+            if (empty($moduleIds)) {
+                continue;
+            }
+
+            foreach ($moduleIds as $index => $moduleId) {
+                // Skip if progress already exists
+                $exists = DB::table('module_progress')
+                    ->where('user_id', $enrolment->user_id)
+                    ->where('learning_module_id', $moduleId)
+                    ->exists();
+
+                if ($exists) {
+                    continue;
+                }
+
+                if ($enrolment->status === 'completed') {
+                    // All modules completed for completed courses
+                    $completedAt = \Carbon\Carbon::parse($enrolment->completed_at)->subMinutes(count($moduleIds) - $index);
+                    DB::table('module_progress')->insert([
+                        'user_id' => $enrolment->user_id,
+                        'learning_module_id' => $moduleId,
+                        'status' => 'completed',
+                        'percent_complete' => 100,
+                        'started_at' => $completedAt->copy()->subMinutes(mt_rand(10, 30)),
+                        'completed_at' => $completedAt,
+                        'last_activity_at' => $completedAt,
+                        'created_at' => $completedAt,
+                        'updated_at' => $completedAt,
+                    ]);
+                } else {
+                    // In progress: complete some modules, leave the rest
+                    $completeUpTo = mt_rand(0, count($moduleIds) - 1);
+
+                    if ($index < $completeUpTo) {
+                        $doneAt = \Carbon\Carbon::parse($enrolment->updated_at)->subDays(mt_rand(1, 7));
+                        DB::table('module_progress')->insert([
+                            'user_id' => $enrolment->user_id,
+                            'learning_module_id' => $moduleId,
+                            'status' => 'completed',
+                            'percent_complete' => 100,
+                            'started_at' => $doneAt->copy()->subMinutes(mt_rand(10, 30)),
+                            'completed_at' => $doneAt,
+                            'last_activity_at' => $doneAt,
+                            'created_at' => $doneAt,
+                            'updated_at' => $doneAt,
+                        ]);
+                    } elseif ($index === $completeUpTo) {
+                        // Currently in-progress module
+                        $startedAt = \Carbon\Carbon::parse($enrolment->updated_at)->subDays(mt_rand(0, 3));
+                        DB::table('module_progress')->insert([
+                            'user_id' => $enrolment->user_id,
+                            'learning_module_id' => $moduleId,
+                            'status' => 'in_progress',
+                            'percent_complete' => mt_rand(15, 85),
+                            'started_at' => $startedAt,
+                            'completed_at' => null,
+                            'last_activity_at' => $startedAt,
+                            'created_at' => $startedAt,
+                            'updated_at' => $startedAt,
+                        ]);
+                    }
+                    // else: not started yet — no record needed
+                }
+                $created++;
+            }
+        }
+
+        $this->command->info("Created {$created} module progress records.");
     }
 
     private function createReinforcementAttempts($courses): void
