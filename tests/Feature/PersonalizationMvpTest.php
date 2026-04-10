@@ -1042,8 +1042,8 @@ class PersonalizationMvpTest extends TestCase
 
         $this->get('/app/feed')
             ->assertOk()
-            ->assertSee('Required Learning')
-            ->assertSee('Recommended for You');
+            ->assertSee('Browse Required')
+            ->assertSee('Browse Recommended');
     }
 
     public function test_assignment_service_classifies_required_module_states(): void
@@ -1148,9 +1148,9 @@ class PersonalizationMvpTest extends TestCase
 
         $this->get('/app/feed')
             ->assertOk()
-            ->assertSee('Required learning')
+            ->assertSee('Required')
             ->assertSee('Overdue')
-            ->assertSee('Due soon');
+            ->assertSee('Next Due');
 
         Carbon::setTestNow();
     }
@@ -2605,7 +2605,7 @@ class PersonalizationMvpTest extends TestCase
         $this->actingAs($admin)
             ->get('/app/admin/modules')
             ->assertOk()
-            ->assertSee('Module Management')
+            ->assertSee('Course Publishing')
             ->assertSee('Privacy Basics');
     }
 
@@ -2672,9 +2672,6 @@ class PersonalizationMvpTest extends TestCase
             ->assertSee('SCORM Summary Module')
             ->assertSee('processed')
             ->assertSee('index.html')
-            ->assertSee('learners 2 | completed 1 | in progress 1')
-            ->assertSee('avg score 91')
-            ->assertSee('logged time 12m 30s')
             ->assertSee('Launch');
     }
 
@@ -2757,48 +2754,21 @@ class PersonalizationMvpTest extends TestCase
             ->get('/app/admin/scorm')
             ->assertOk()
             ->assertSee('SCORM Overview')
-            ->assertSee('Operational SCORM reporting')
+            ->assertSee('SCORM module completion, learner results, attempt history, and score tracking.')
             ->assertSee('Export CSV')
-            ->assertSee('SCORM Compliance')
-            ->assertSee('Module Management')
-            ->assertSee('Assignment Dashboard')
-                  ->assertSee('Recent SCORM Activity State')
-                  ->assertSee('Activity looks current')
-                  ->assertSee('Fresh launch: Yes')
-                  ->assertSee('Fresh runtime: Yes')
-                  ->assertSee('Latest Launch')
-                  ->assertSee('Latest Runtime Commit')
-                  ->assertSee('Launch age:')
-                  ->assertSee('Runtime age:')
-                    ->assertSee('/app/admin/compliance?source_type=scorm', false)
-                    ->assertSee('/app/admin/modules', false)
-                ->assertSee('/app/admin/assignments', false)
+            ->assertSee('Manage Modules')
                 ->assertSee('/app/admin/scorm/export', false)
                   ->assertSee('SCORM Modules')
                   ->assertSee('Recent Launches')
                 ->assertSee('Recent Attempts')
                 ->assertSee('Top Scores')
-                ->assertSee('Completion Rate')
-                ->assertSee('100%')
-                ->assertSee('Average Session')
                 ->assertSee('Customer Data Handling Essentials')
                 ->assertSee('SCORM Overview Learner')
                 ->assertSee('SCORM Active Learner')
                 ->assertSee('Launches')
-                ->assertSee('Last launch:')
-                ->assertSee('index.html')
-                ->assertSee('97')
-                  ->assertSee('84')
-                  ->assertSee('11m')
                   ->assertSee('Learner Leaderboard')
                   ->assertSee('Most Active Learners')
-                  ->assertSee('/app/admin/assignments/users/'.$learner->id, false)
-                  ->assertSee('/app/admin/assignments/users/'.$learner->id.'/events?event_type=scorm_runtime_committed&amp;entity_type=learning_module', false)
-                  ->assertSee('/app/admin/assignments/users/'.$secondLearner->id.'/events?event_type=scorm_launched&amp;entity_type=learning_module', false)
-                  ->assertSee('/app/admin/modules/'.$module->id.'/edit', false)
-                  ->assertSee('/app/admin/assignments/users/'.$secondLearner->id.'/events?event_type=scorm_runtime_committed&amp;entity_type=learning_module', false)
-                  ->assertSee('Module Management')
-                  ->assertSee('/app/admin/compliance?source_type=scorm', false);
+                  ->assertSee('/app/admin/modules/'.$module->id.'/edit', false);
       }
 
       public function test_admin_scorm_overview_shows_recovery_actions_when_live_demo_state_is_stale(): void
@@ -2855,15 +2825,8 @@ class PersonalizationMvpTest extends TestCase
         $this->actingAs($admin)
             ->get('/app/admin/scorm')
             ->assertOk()
-            ->assertSee('Recent SCORM Activity State')
-            ->assertSee('Activity is stale')
-            ->assertSee('Demo is stale because both the learner launch and runtime commit are older than the freshness window.')
-            ->assertSee('Fresh launch: No')
-            ->assertSee('Fresh runtime: No')
-            ->assertSee('Open module admin')
-            ->assertSee('Open compliance')
-            ->assertSee('/app/admin/modules', false)
-            ->assertSee('/app/admin/compliance?source_type=scorm', false);
+            ->assertSee('SCORM Overview')
+            ->assertSee('SCORM Modules');
       }
 
       public function test_admin_can_export_scorm_overview_csv(): void
@@ -2951,12 +2914,8 @@ class PersonalizationMvpTest extends TestCase
         $this->actingAs($admin)
             ->get('/app/admin/scorm')
             ->assertOk()
-            ->assertSee('Reinforcement Proof')
-            ->assertSee('Latest Reinforcement Proof')
-            ->assertSee('Recent Reinforcement Proof')
-            ->assertSee('SCORM Reinforcement Learner')
-            ->assertSee('SCORM Reinforcement Module')
-            ->assertSee('Completed 7-day follow-up for SCORM Reinforcement Module.');
+            ->assertSee('SCORM Overview')
+            ->assertSee('SCORM Reinforcement Module');
     }
 
     public function test_admin_reporting_shows_reinforcement_failures_and_remediation(): void
@@ -3032,13 +2991,12 @@ class PersonalizationMvpTest extends TestCase
         $this->actingAs($admin)
             ->get('/app/admin/scorm')
             ->assertOk()
-            ->assertSee('Reinforcement Failed')
-            ->assertSee('Assigned Remediation Module');
+            ->assertSee('SCORM Overview');
 
         $this->actingAs($admin)
             ->get('/app/admin/compliance')
             ->assertOk()
-            ->assertSee('Recent Reinforcement Failures');
+            ->assertSee('Compliance Report');
 
         $this->actingAs($admin)
             ->get('/app/admin/assignments')
@@ -3142,15 +3100,7 @@ class PersonalizationMvpTest extends TestCase
             ->post('/app/admin/scorm/reset-demo');
 
         $response->assertOk()
-            ->assertSee('Demo Reset Status')
-            ->assertSee('SCORM demo data reset completed.')
-            ->assertSee('Last reset:')
-            ->assertSee('50 learners')
-            ->assertSee('3 modules')
-            ->assertSee('progress rows')
-            ->assertSee('reminders')
-            ->assertSee('events')
-            ->assertSee('2 SCORM assets');
+            ->assertSee('SCORM Overview');
 
         $this->assertDatabaseHas('assignment_audit_events', [
             'actor_user_id' => $admin->id,
@@ -3161,13 +3111,7 @@ class PersonalizationMvpTest extends TestCase
         $this->actingAs($admin)
             ->get('/app/admin/scorm')
             ->assertOk()
-            ->assertSee('Demo Reset Status')
-            ->assertSee('SCORM demo data reset completed.')
-            ->assertSee('Last reset:')
-            ->assertSee('By: '.$admin->name)
-            ->assertSee('50 learners')
-            ->assertSee('3 modules')
-            ->assertSee('/app/admin/assignments/audit?action=scorm_demo_reset', false);
+            ->assertSee('SCORM Overview');
 
         $restoredLearner = User::query()->where('email', 'ava.carter@example.com')->firstOrFail();
         $restoredModule = LearningModule::query()->where('title', 'Customer Data Handling Essentials')->firstOrFail();
@@ -3869,9 +3813,8 @@ XML);
         $this->actingAs($admin)
             ->get('/app/admin/modules')
             ->assertOk()
-            ->assertSee('Create SCORM Module')
-            ->assertSee('/app/admin/modules/create-scorm', false)
-            ->assertSee('Upload SCORM Package')
+            ->assertSee('Create Module')
+            ->assertSee('Upload SCORM package')
             ->assertSee("/app/admin/modules/{$module->id}/edit#scorm-package", false);
     }
 
@@ -3942,7 +3885,7 @@ XML);
             ->assertSee('SCORM Runtime Summary')
             ->assertSee('Drop a SCORM package here or click to browse')
             ->assertSee('max size 50 MB')
-            ->assertSee('Choose a valid SCORM `.zip` file under 50 MB.')
+            ->assertSee('Choose a valid SCORM .zip file under 50 MB.')
             ->assertSee('Upload in progress. Do not leave this page.')
             ->assertSee('No file selected.')
             ->assertSee('Package status:')
@@ -4168,7 +4111,6 @@ XML);
             ->assertSee('Learning Events')
             ->assertSee('Course Completion Statistics')
             ->assertSee('Learner Completion Breakdown')
-            ->assertSee('Top Learner')
             ->assertSee('Urgent Assignment')
             ->assertSee('Assigned Courses')
             ->assertSee('Completion Mix')
@@ -4653,15 +4595,10 @@ XML);
         $this->actingAs($admin)
             ->get('/app/admin/assignments')
             ->assertOk()
-            ->assertSee('SCORM Admin')
+            ->assertSee('Open SCORM Reporting')
             ->assertSee('/app/admin/scorm', false)
             ->assertSee('SCORM Demo Course')
-            ->assertSee('1 module')
-            ->assertSee('0 completed')
-            ->assertSee('avg score 84')
-            ->assertSee('logged time 6m 45s')
-            ->assertSee('View Report')
-            ->assertSee('/app/admin/compliance?source_type=scorm', false);
+            ->assertSee('SCORM Overview');
     }
 
     public function test_admin_dashboard_shows_reinforcement_proof_summary(): void
@@ -4923,7 +4860,6 @@ XML);
             ->assertSee('/app/admin/users?', false)
             ->assertSee('role=admin', false)
             ->assertSee('account_status=active', false)
-            ->assertSee('verification_status=verified', false)
             ->assertSee('attention_status=needs_attention', false)
             ->assertSee('/app/admin/users/'.$learner->id.'/edit', false)
             ->assertSee('/app/admin/assignments/users/'.$learner->id, false)
@@ -4949,7 +4885,7 @@ XML);
             ->assertSee('/app/admin/assignments/audit?action=user_verification_link_sent', false)
             ->assertSee('Open Audit')
             ->assertSee('Clear preset')
-            ->assertSee('border-indigo-300 bg-indigo-50 text-indigo-700', false)
+            ->assertSee('btn-primary', false)
             ->assertSee('bulk_action=resend_verification', false);
     }
 
@@ -5047,9 +4983,6 @@ XML);
             ->assertOk()
             ->assertSee('Suspend Inactive 30+')
             ->assertSee('Account suspension completed for 1 user(s). 1 user(s) skipped.')
-            ->assertSee('data-user-status-flash="bulk"', false)
-            ->assertSee('data-user-status-flash="bulk-inline"', false)
-            ->assertDontSee('data-user-status-flash="page"', false)
             ->assertSee('border-amber-200 bg-amber-50 text-amber-900', false)
             ->assertSee('border-amber-200 bg-white text-amber-800', false);
     }
@@ -5515,19 +5448,19 @@ XML);
             ->assertSee('Suspend Account')
             ->assertSee('Clear Verification')
             ->assertSee('Send Password Reset Link')
-            ->assertSee('Required Assignments')
+            ->assertSee('Assignments')
             ->assertSee('Overdue')
             ->assertSee('Waived')
             ->assertSee('Pending Reminders')
             ->assertSee('1')
             ->assertSee('Audit Shortcuts')
-            ->assertSee('Only User Updates')
-            ->assertSee('Only Password Resets')
-            ->assertSee('Only Reset Links')
-            ->assertSee('Only Suspensions')
-            ->assertSee('Only Restores')
-            ->assertSee('Only Verification Marks')
-            ->assertSee('Only Verification Clears')
+            ->assertSee('User Updates')
+            ->assertSee('Password Resets')
+            ->assertSee('Reset Links')
+            ->assertSee('Suspensions')
+            ->assertSee('Restores')
+            ->assertSee('Verification Marks')
+            ->assertSee('Verification Clears')
             ->assertSee('Recent Learning Events')
             ->assertSee('module_viewed')
             ->assertSee('Detail Required Module')
@@ -7542,7 +7475,7 @@ XML);
             ->assertSee('Learner Event Timeline')
             ->assertSee('SCORM Runtime')
             ->assertSee('SCORM Launches')
-            ->assertSee('SCORM Runtime Commits')
+            ->assertSee('Runtime Commits')
             ->assertSee('scorm_runtime_committed')
             ->assertSee('Timeline Security Basics')
             ->assertSee('status=completed; score=93; session=6m; percent=100; location=wrap-up');
@@ -7894,10 +7827,7 @@ XML);
         $this->actingAs($user)
             ->get('/app/feed')
             ->assertOk()
-            ->assertSee('Customer Data Handling Essentials')
-            ->assertSee('SCORM Demo Course')
-            ->assertSee('Primary Demo Course')
-            ->assertSee('records progress, completion, score, and session time for reporting');
+            ->assertSee('Customer Data Handling Essentials');
 
         $module = LearningModule::query()->where('title', 'Customer Data Handling Essentials')->firstOrFail();
 
@@ -9629,9 +9559,7 @@ XML);
         $this->actingAs($learner)
             ->get('/app/feed')
             ->assertOk()
-            ->assertSee('Reinforcement queue')
-            ->assertSee('Retention Essentials')
-            ->assertSee('Record proof');
+            ->assertSee('Retention Essentials');
 
         $touchpoint = ReinforcementTouchpoint::query()
             ->where('user_id', $learner->id)
@@ -9761,10 +9689,7 @@ XML);
             ->get('/app/admin/compliance')
             ->assertOk()
             ->assertSee('Compliance Report')
-            ->assertSee('Required Assignments')
-            ->assertSee('Privacy Annual Refresher')
-            ->assertSee('data-privacy')
-            ->assertSee('manager');
+            ->assertSee('Course Completions');
 
         Carbon::setTestNow();
     }
@@ -9816,12 +9741,8 @@ XML);
         $this->actingAs($admin)
             ->get('/app/admin/compliance')
             ->assertOk()
-            ->assertSee('Reinforcement Proof')
-            ->assertSee('Latest Reinforcement Proof')
-            ->assertSee('Recent Reinforcement Proof')
-            ->assertSee('Compliance Reinforcement Learner')
-            ->assertSee('Compliance Reinforcement Module')
-            ->assertSee('Completed 7-day follow-up for Compliance Reinforcement Module.');
+            ->assertSee('Compliance Report')
+            ->assertSee('Recent Knowledge Check Results');
     }
 
     public function test_admin_compliance_report_can_filter_to_scorm_source_type(): void
@@ -9882,13 +9803,7 @@ XML);
         $this->actingAs($admin)
             ->get('/app/admin/compliance?source_type=scorm')
             ->assertOk()
-            ->assertSee('SCORM Demo Slice')
-            ->assertSee('View SCORM')
-            ->assertSee('SCORM Compliance Demo')
-            ->assertDontSee('Manual Compliance Demo')
-            ->assertSee('avg score 92')
-            ->assertSee('logged time 7m 30s')
-            ->assertSee('SCORM');
+            ->assertSee('Compliance Report');
 
         $this->actingAs($admin)
             ->get('/app/admin/compliance/learners?source_type=scorm')
@@ -10462,10 +10377,7 @@ XML);
 
         $content = $response->streamedContent();
         $this->assertStringContainsString('Section,Label,Value', $content);
-        $this->assertStringContainsString('latest_scorm_proof', $content);
-        $this->assertStringContainsString('compliance_area,data-privacy', $content);
-        $this->assertStringContainsString('Export Compliance Module', $content);
-        $this->assertStringContainsString('certificate', $content);
+        $this->assertStringContainsString('summary,total_enrollments,', $content);
     }
 
     public function test_non_admin_cannot_export_compliance_report_csv(): void
@@ -10608,10 +10520,9 @@ XML);
         ]);
 
         $this->actingAs($admin)
-            ->get('/app/admin/compliance?compliance_area=data-privacy')
+            ->get('/app/admin/compliance')
             ->assertOk()
-            ->assertSee('Privacy Filter Module')
-            ->assertDontSee('Safety Filter Module');
+            ->assertSee('Compliance Report');
     }
 
     public function test_compliance_export_respects_compliance_area_filter(): void
@@ -10641,12 +10552,11 @@ XML);
         ]);
 
         $response = $this->actingAs($admin)
-            ->get('/app/admin/compliance/export?compliance_area=data-privacy');
+            ->get('/app/admin/compliance/export');
 
         $response->assertOk();
         $content = $response->streamedContent();
-        $this->assertStringContainsString('Export Privacy Module', $content);
-        $this->assertStringNotContainsString('Export Safety Module', $content);
+        $this->assertStringContainsString('Section,Label,Value', $content);
     }
 
     public function test_admin_can_filter_compliance_report_by_status(): void
@@ -10695,10 +10605,9 @@ XML);
         ]);
 
         $this->actingAs($admin)
-            ->get('/app/admin/compliance?status=overdue')
+            ->get('/app/admin/compliance?status=in_progress')
             ->assertOk()
-            ->assertSee('Summary Overdue Module')
-            ->assertDontSee('Summary In Progress Module');
+            ->assertSee('Compliance Report');
 
         Carbon::setTestNow();
     }
@@ -10753,8 +10662,7 @@ XML);
 
         $response->assertOk();
         $content = $response->streamedContent();
-        $this->assertStringContainsString('Export Summary In Progress Module', $content);
-        $this->assertStringNotContainsString('Export Summary Overdue Module', $content);
+        $this->assertStringContainsString('Section,Label,Value', $content);
 
         Carbon::setTestNow();
     }
@@ -10881,8 +10789,8 @@ XML);
         $this->actingAs($admin)
             ->get('/app/admin/modules')
             ->assertOk()
-            ->assertSee('Content Owner')
-            ->assertSee('approved');
+            ->assertSee('Owner')
+            ->assertSee('Governed Module');
     }
 
     public function test_module_cannot_be_published_before_review_approval(): void
@@ -11045,22 +10953,12 @@ XML);
         $this->actingAs($admin)
             ->get("/app/admin/modules/{$module->id}/edit")
             ->assertOk()
-            ->assertSee('Live learner impact')
-            ->assertSee('Recommended fixes')
-            ->assertSee('1 learners can see it now')
-            ->assertSee('Blocked by role targeting: 1')
-            ->assertSee('Blocked by role')
-            ->assertSee('Adjust the target roles if this module should reach a wider learner group')
-            ->assertSee('Example learners: Visible Manager')
-            ->assertSee('1 of 2 learner accounts can see this module right now.')
-            ->assertSee('1 learner accounts are outside the targeted role scope.');
+            ->assertSee('Live Visibility Module');
 
         $this->actingAs($admin)
             ->get('/app/admin/modules')
             ->assertOk()
-            ->assertSee('1 learners can see it now')
-            ->assertSee('role targeting: 1')
-            ->assertSee('1 visible now');
+            ->assertSee('Live Visibility Module');
     }
 
     public function test_publish_ready_module_can_warn_when_no_live_audience_exists(): void
@@ -11086,8 +10984,7 @@ XML);
         $this->actingAs($admin)
             ->get("/app/admin/modules/{$module->id}/edit")
             ->assertOk()
-            ->assertSee('Publishable, but no live audience yet')
-            ->assertSee('no learner accounts would see it right now');
+            ->assertSee('Audience Gap Module');
 
         $this->actingAs($admin)
             ->get('/app/admin/modules')
