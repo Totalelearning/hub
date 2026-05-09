@@ -311,6 +311,7 @@
                 grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
             }
         }
+
     </style>
 
     <link rel="stylesheet" href="{{ asset('vendor/learninguiux/css/app.css') }}">

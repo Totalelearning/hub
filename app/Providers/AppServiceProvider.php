@@ -50,6 +50,8 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::policy(ModuleProgress::class, ModuleProgressPolicy::class);
         Gate::policy(UserPreference::class, UserPreferencePolicy::class);
-        Gate::define('admin-access', fn ($user) => (bool) $user->is_admin);
+        Gate::define('admin-access', fn ($user) => $user->hasAdminAccess());
+        Gate::define('admin-write', fn ($user) => $user->isSiteAdmin());
+        Gate::define('manage-teams', fn ($user) => $user->canManageTeamAssignments());
     }
 }

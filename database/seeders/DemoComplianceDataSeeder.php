@@ -145,7 +145,65 @@ class DemoComplianceDataSeeder extends Seeder
         // Step 5: Create reinforcement attempts for completed users
         $this->createReinforcementAttempts($courses);
 
+        // Step 6: Create demo manager users
+        $this->createManagerUsers();
+
         $this->command->info('Demo compliance data seeded successfully.');
+    }
+
+    private function createManagerUsers(): void
+    {
+        // SLT Manager — oversees multiple teams
+        $sltManager = User::updateOrCreate(
+            ['email' => 'slt.manager@totalelearning.local'],
+            [
+                'name' => 'Sarah Thompson',
+                'password' => Hash::make('password'),
+                'system_role' => 'slt_manager',
+                'managed_teams' => [
+                    'Teaching Staff',
+                    'Teaching Support Staff',
+                    'Senior Leadership Team (SLT)',
+                    'Safeguarding & Pastoral Team',
+                ],
+            ]
+        );
+        UserPreference::updateOrCreate(
+            ['user_id' => $sltManager->id],
+            ['team' => 'Senior Leadership Team (SLT)', 'role' => 'Deputy Head', 'topics' => json_encode(['leadership', 'compliance']), 'goal' => 'Oversee staff training compliance', 'difficulty' => 'advanced']
+        );
+
+        // Manager — oversees a single team
+        $manager = User::updateOrCreate(
+            ['email' => 'it.manager@totalelearning.local'],
+            [
+                'name' => 'James Robertson',
+                'password' => Hash::make('password'),
+                'system_role' => 'manager',
+                'managed_teams' => ['IT & Digital Services'],
+            ]
+        );
+        UserPreference::updateOrCreate(
+            ['user_id' => $manager->id],
+            ['team' => 'IT & Digital Services', 'role' => 'IT Manager', 'topics' => json_encode(['productivity', 'ai-literacy']), 'goal' => 'Keep IT team skills current', 'difficulty' => 'advanced']
+        );
+
+        // Second Manager — oversees HR & People
+        $hrManager = User::updateOrCreate(
+            ['email' => 'hr.manager@totalelearning.local'],
+            [
+                'name' => 'Priya Patel',
+                'password' => Hash::make('password'),
+                'system_role' => 'manager',
+                'managed_teams' => ['HR & People'],
+            ]
+        );
+        UserPreference::updateOrCreate(
+            ['user_id' => $hrManager->id],
+            ['team' => 'HR & People', 'role' => 'HR Manager', 'topics' => json_encode(['compliance', 'wellbeing']), 'goal' => 'Ensure HR team compliance', 'difficulty' => 'intermediate']
+        );
+
+        $this->command->info('Created 3 demo manager users (SLT Manager, IT Manager, HR Manager).');
     }
 
     private function createUsers(): array

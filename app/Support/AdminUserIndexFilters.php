@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\Location;
 use App\Models\Role;
 use App\Models\Team;
 use App\Models\User;
@@ -16,6 +17,7 @@ class AdminUserIndexFilters
     public const SORTABLE_COLUMNS = ['created_at', 'name', 'email', 'last_login_at'];
     private static ?array $cachedRoleFilters = null;
     private static ?array $cachedTeamFilters = null;
+    private static ?array $cachedLocationFilters = null;
 
     public static function roleFilters(): array
     {
@@ -27,12 +29,18 @@ class AdminUserIndexFilters
         return self::$cachedTeamFilters ??= Team::options();
     }
 
+    public static function locationFilters(): array
+    {
+        return self::$cachedLocationFilters ??= Location::options();
+    }
+
     public static function normalize(array $validated): array
     {
         $sort = $validated['sort'] ?? self::DEFAULT_SORT;
 
         return [
             'q' => trim((string) ($validated['q'] ?? '')),
+            'location' => $validated['location'] ?? 'all',
             'role' => $validated['role'] ?? 'all',
             'team' => $validated['team'] ?? 'all',
             'account_status' => $validated['account_status'] ?? 'all',
@@ -51,7 +59,7 @@ class AdminUserIndexFilters
         return array_filter($filters, function ($value, $key) {
             return match ($key) {
                 'q' => $value !== '',
-                'role', 'team', 'account_status', 'verification_status', 'inactivity_status', 'attention_status', 'training_compliance' => $value !== 'all',
+                'location', 'role', 'team', 'account_status', 'verification_status', 'inactivity_status', 'attention_status', 'training_compliance' => $value !== 'all',
                 'sort' => $value !== self::DEFAULT_SORT,
                 'sort_dir' => $value !== self::DEFAULT_SORT_DIR,
                 'limit' => (int) $value !== self::DEFAULT_LIMIT,
@@ -60,9 +68,19 @@ class AdminUserIndexFilters
         }, ARRAY_FILTER_USE_BOTH);
     }
 
-    public static function filteredQuery(array $filters): Builder
+    public static function filteredQuery(array $filters, ?User $admin = null): Builder
     {
         return User::query()
+            ->when($admin, fn (Builder $q) => $q->forManagedScope($admin))
+            ->when(($filters['location'] ?? 'all') !== 'all', function (Builder $query) use ($filters) {
+                $locationName = self::locationFilters()[$filters['location']] ?? null;
+                if ($locationName === null) {
+                    return;
+                }
+                $query->whereHas('preference', function (Builder $q) use ($filters) {
+                    $q->whereHas('location', fn (Builder $lq) => $lq->where('slug', $filters['location']));
+                });
+            })
             ->when($filters['q'] !== '', function (Builder $query) use ($filters) {
                 $search = '%'.$filters['q'].'%';
 

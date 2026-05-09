@@ -294,6 +294,14 @@
                     </div>
                 </div>
 
+                {{-- Gamification Widget --}}
+                @if (isset($gamification))
+                    <div class="mb-1">
+                        <span class="text-uppercase fw-semibold text-secondary" style="font-size: .7rem; letter-spacing: .08em;">Your Progress</span>
+                    </div>
+                    @include('app.partials.gamification-widget', ['gamification' => $gamification])
+                @endif
+
                 @if (($assignedCourses ?? collect())->isNotEmpty())
                     <div class="card learner-panel-card mb-4">
                         <div class="card-body p-4 p-lg-5">

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Location;
 use App\Models\Role;
 use App\Models\Team;
 use Illuminate\Contracts\View\View;
@@ -20,6 +21,7 @@ class AdminRolesTeamsController extends Controller
         return view('app.admin-roles-teams', [
             'roles' => Role::ordered()->get(),
             'teams' => Team::ordered()->get(),
+            'locations' => Location::ordered()->get(),
         ]);
     }
 
@@ -167,5 +169,74 @@ class AdminRolesTeamsController extends Controller
 
         return redirect()->route('app.admin.roles-teams.index')
             ->with('status', 'Team deleted.');
+    }
+
+    // ── Location CRUD ───────────────────────────────────────────
+
+    public function storeLocation(Request $request): RedirectResponse
+    {
+        Gate::authorize('admin-access');
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+        ]);
+
+        $slug = Str::slug($validated['name'], '_');
+
+        if (Location::where('slug', $slug)->exists()) {
+            return redirect()->route('app.admin.roles-teams.index')
+                ->withErrors(['name' => 'A location with this name already exists.'])
+                ->withInput();
+        }
+
+        $maxOrder = Location::max('sort_order') ?? 0;
+
+        Location::create([
+            'slug' => $slug,
+            'name' => trim($validated['name']),
+            'sort_order' => $maxOrder + 1,
+        ]);
+
+        return redirect()->route('app.admin.roles-teams.index')
+            ->with('status', 'Location created.');
+    }
+
+    public function updateLocation(Request $request, Location $location): RedirectResponse
+    {
+        Gate::authorize('admin-access');
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+        ]);
+
+        $newName = trim($validated['name']);
+        $newSlug = Str::slug($newName, '_');
+
+        if ($newSlug !== $location->slug && Location::where('slug', $newSlug)->exists()) {
+            return redirect()->route('app.admin.roles-teams.index')
+                ->withErrors(['name' => 'A location with this name already exists.'])
+                ->withInput();
+        }
+
+        $location->update([
+            'slug' => $newSlug,
+            'name' => $newName,
+        ]);
+
+        return redirect()->route('app.admin.roles-teams.index')
+            ->with('status', 'Location updated.');
+    }
+
+    public function destroyLocation(Request $request, Location $location): RedirectResponse
+    {
+        Gate::authorize('admin-access');
+
+        // Clear this location from any user preferences
+        \App\Models\UserPreference::where('location_id', $location->id)->update(['location_id' => null]);
+
+        $location->delete();
+
+        return redirect()->route('app.admin.roles-teams.index')
+            ->with('status', 'Location deleted.');
     }
 }

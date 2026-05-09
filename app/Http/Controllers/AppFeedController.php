@@ -11,6 +11,7 @@ use App\Models\SavedLearningModule;
 use App\Services\AssignmentService;
 use App\Services\FeedRankingService;
 use App\Services\LearningPathService;
+use App\Services\GamificationService;
 use App\Services\ReinforcementService;
 use Illuminate\View\View;
 
@@ -397,6 +398,8 @@ class AppFeedController extends Controller
             ->take(3)
             ->values();
 
+        $gamification = app(GamificationService::class)->userSummary($user);
+
         $latestActivity = $recentLearningActivity->first();
 
         $momentumSummary = [
@@ -498,6 +501,7 @@ class AppFeedController extends Controller
             'completionNextActions' => $completionNextActions,
             'savedModuleIds' => $savedModuleIds,
             'preference' => $user->preference,
+            'gamification' => $gamification,
         ]);
     }
 

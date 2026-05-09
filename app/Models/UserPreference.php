@@ -12,6 +12,7 @@ class UserPreference extends Model
         'topics',
         'role',
         'team',
+        'location_id',
         'goal',
         'difficulty',
     ];
@@ -26,5 +27,10 @@ class UserPreference extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function location(): BelongsTo
+    {
+        return $this->belongsTo(Location::class);
     }
 }

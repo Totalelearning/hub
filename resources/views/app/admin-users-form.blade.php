@@ -127,33 +127,104 @@
                                 @error('role') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                             </div>
 
+                            {{-- Location --}}
+                            <div class="col-12 col-md-6">
+                                <label for="location_id" class="form-label">Location</label>
+                                @can('manage-teams')
+                                    <select id="location_id" name="location_id" class="form-select form-select-sm">
+                                        <option value="">Select a location</option>
+                                        @foreach (($availableLocationOptions ?? []) as $id => $label)
+                                            <option value="{{ $id }}" @selected(old('location_id', $managedUser->preference?->location_id) == $id)>{{ $label }}</option>
+                                        @endforeach
+                                    </select>
+                                    <div class="form-text">Assign the user to a school location for multi-site filtering and comparison.</div>
+                                @else
+                                    <input type="text" class="form-control form-control-sm" value="{{ $managedUser->preference?->location?->name ?? 'Not assigned' }}" disabled>
+                                    <div class="form-text">Location assignment can only be changed by a Site Administrator or SLT Manager.</div>
+                                @endcan
+                                @error('location_id') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                            </div>
+
                             {{-- Team --}}
                             <div class="col-12 col-md-6">
                                 <label for="team" class="form-label">Team</label>
-                                <select id="team" name="team" class="form-select form-select-sm">
-                                    <option value="">Select a team</option>
-                                    @foreach (($availableTeamOptions ?? []) as $value => $label)
-                                        <option value="{{ $value }}" @selected(old('team', array_search($managedUser->preference?->team, $availableTeamOptions ?? [], true)) === $value)>{{ $label }}</option>
-                                    @endforeach
-                                </select>
-                                <div class="form-text">Assign the user to the school team that should drive reporting and compliance grouping.</div>
+                                @can('manage-teams')
+                                    <select id="team" name="team" class="form-select form-select-sm">
+                                        <option value="">Select a team</option>
+                                        @foreach (($availableTeamOptions ?? []) as $value => $label)
+                                            <option value="{{ $value }}" @selected(old('team', array_search($managedUser->preference?->team, $availableTeamOptions ?? [], true)) === $value)>{{ $label }}</option>
+                                        @endforeach
+                                    </select>
+                                    <div class="form-text">Assign the user to the school team that should drive reporting and compliance grouping.</div>
+                                @else
+                                    <input type="text" class="form-control form-control-sm" value="{{ $managedUser->preference?->team ?? 'Not assigned' }}" disabled>
+                                    <div class="form-text">Team assignment can only be changed by a Site Administrator or SLT Manager.</div>
+                                @endcan
                                 @error('team') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                             </div>
 
-                            {{-- Admin checkbox --}}
-                            <div class="col-12">
-                                <div class="form-check">
-                                    <input type="checkbox" name="is_admin" value="1" class="form-check-input" id="is_admin" @checked(old('is_admin', $managedUser->is_admin))>
-                                    <label class="form-check-label" for="is_admin">Admin access</label>
-                                </div>
-                                <div class="form-text">
-                                    @if ($managedUser->exists)
-                                        If you uncheck this on your own account, the system keeps your admin access to prevent lockout.
-                                    @else
-                                        Enable this only for trusted operator accounts.
-                                    @endif
-                                </div>
+                            {{-- System Role (site admin only) --}}
+                            @if (auth()->user()?->isSiteAdmin())
+                            <div class="col-12 col-md-6" x-data="{ role: '{{ old('system_role', $managedUser->system_role ?? 'learner') }}' }">
+                                <label for="system_role" class="form-label">System Role</label>
+                                <select id="system_role" name="system_role" class="form-select form-select-sm" x-model="role">
+                                    <option value="learner">Learner</option>
+                                    <option value="manager">Manager</option>
+                                    <option value="slt_manager">SLT Manager</option>
+                                    <option value="site_admin">Site Administrator</option>
+                                </select>
+                                <div class="form-text">Controls what admin features this user can access. Managers see only their assigned teams.</div>
+                                @error('system_role') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+
+                                {{-- Managed Teams (visible for manager / slt_manager) --}}
+                                <template x-if="role === 'manager' || role === 'slt_manager'">
+                                    <div class="mt-3">
+                                        <label class="form-label">Managed Teams</label>
+                                        <div class="card bg-light">
+                                            <div class="card-body py-2 px-3">
+                                                @foreach (($availableTeamOptions ?? []) as $slug => $teamName)
+                                                    <div class="form-check">
+                                                        <input type="checkbox" name="managed_teams[]" value="{{ $teamName }}" class="form-check-input" id="mt_{{ $slug }}"
+                                                            @checked(in_array($teamName, old('managed_teams', $managedUser->managed_teams ?? []), true))>
+                                                        <label class="form-check-label" for="mt_{{ $slug }}">{{ $teamName }}</label>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                        <div class="form-text">Select the teams this manager can view and manage.</div>
+                                        @error('managed_teams') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                                    </div>
+                                </template>
+
+                                {{-- Managed Locations (visible for manager / slt_manager) --}}
+                                <template x-if="role === 'manager' || role === 'slt_manager'">
+                                    <div class="mt-3">
+                                        <label class="form-label">Managed Locations</label>
+                                        <div class="card bg-light">
+                                            <div class="card-body py-2 px-3">
+                                                @foreach (($availableLocationOptions ?? []) as $id => $locationName)
+                                                    <div class="form-check">
+                                                        <input type="checkbox" name="managed_locations[]" value="{{ $locationName }}" class="form-check-input" id="ml_{{ $id }}"
+                                                            @checked(in_array($locationName, old('managed_locations', $managedUser->managed_locations ?? []), true))>
+                                                        <label class="form-check-label" for="ml_{{ $id }}">{{ $locationName }}</label>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                        <div class="form-text">Select the locations this manager can view and manage.</div>
+                                        @error('managed_locations') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                                    </div>
+                                </template>
                             </div>
+                            @else
+                                @if ($managedUser->exists && $managedUser->hasAdminAccess())
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label">System Role</label>
+                                    <input type="text" class="form-control form-control-sm" value="{{ $managedUser->systemRoleLabel() }}" disabled>
+                                    <div class="form-text">System role can only be changed by a Site Administrator.</div>
+                                </div>
+                                @endif
+                            @endif
 
                             {{-- Account active checkbox --}}
                             <div class="col-12">

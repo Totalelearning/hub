@@ -6,6 +6,7 @@ use App\Models\AssignmentAuditEvent;
 use App\Models\AssignmentReminder;
 use App\Models\LearningModule;
 use App\Models\LearningEvent;
+use App\Models\Location;
 use App\Models\ModuleProgress;
 use App\Models\Role;
 use App\Models\Team;
@@ -31,6 +32,7 @@ class AdminUserController extends Controller
 {
     private static ?array $cachedRoleFilterOptions = null;
     private static ?array $cachedTeamFilterOptions = null;
+    private static ?array $cachedLocationFilterOptions = null;
 
     private static function roleFilterOptions(): array
     {
@@ -40,6 +42,11 @@ class AdminUserController extends Controller
     private static function teamFilterOptions(): array
     {
         return self::$cachedTeamFilterOptions ??= Team::optionsWithAll();
+    }
+
+    private static function locationFilterOptions(): array
+    {
+        return self::$cachedLocationFilterOptions ??= Location::optionsWithAll();
     }
 
     private const TRAINING_COMPLIANCE_OPTIONS = [
@@ -66,6 +73,7 @@ class AdminUserController extends Controller
             'submitLabel' => 'Create User',
             'availableRoleOptions' => $this->formRoleOptions(),
             'availableTeamOptions' => $this->formTeamOptions(),
+            'availableLocationOptions' => $this->formLocationOptions(),
         ]);
     }
 
@@ -82,9 +90,10 @@ class AdminUserController extends Controller
         $bulkPresetCounts = $this->bulkPresetCounts();
         $bulkPresetAuditActions = AdminUserBulkPresets::auditActions();
         $statusBanners = $this->statusBanners($request);
-        $query = AdminUserIndexFilters::filteredQuery($filters);
+        $query = AdminUserIndexFilters::filteredQuery($filters, $request->user());
 
         $users = AdminUserIndexFilters::applySorting(clone $query, $filters)
+            ->with(['preference.location'])
             ->paginate($filters['limit'])
             ->appends($request->query());
 
@@ -112,6 +121,7 @@ class AdminUserController extends Controller
             'summary' => $summary,
             'availableRoleFilters' => self::roleFilterOptions(),
             'availableTeamFilters' => self::teamFilterOptions(),
+            'availableLocationFilters' => self::locationFilterOptions(),
             'availableTrainingComplianceFilters' => self::TRAINING_COMPLIANCE_OPTIONS,
             'selectedBulkAction' => $selectedBulkAction,
             'selectedBulkPreset' => $selectedBulkPreset,
@@ -121,7 +131,7 @@ class AdminUserController extends Controller
             'bulkPresetAuditActions' => $bulkPresetAuditActions,
             'pageStatus' => $statusBanners['page'],
             'bulkStatusBanner' => $statusBanners['bulk'],
-            'csvImportColumns' => ['name', 'email', 'role', 'team', 'is_admin', 'account_active', 'password'],
+            'csvImportColumns' => ['name', 'email', 'role', 'team', 'location', 'is_admin', 'account_active', 'password'],
         ]);
     }
 
@@ -131,7 +141,8 @@ class AdminUserController extends Controller
 
         $validated = $this->validatedIndexFilters($request);
         $filters = AdminUserIndexFilters::normalize($validated);
-        $users = AdminUserIndexFilters::applySorting(AdminUserIndexFilters::filteredQuery($filters), $filters)
+        $users = AdminUserIndexFilters::applySorting(AdminUserIndexFilters::filteredQuery($filters, $request->user()), $filters)
+            ->with(['preference.location'])
             ->limit(1000)
             ->get();
 
@@ -140,14 +151,18 @@ class AdminUserController extends Controller
         return response()->streamDownload(function () use ($users): void {
             $handle = fopen('php://output', 'wb');
 
-            fputcsv($handle, ['id', 'name', 'email', 'role', 'account_status', 'suspended_at', 'email_verified_at', 'last_login_at', 'created_at']);
+            $csv = fn (array $row) => fputcsv($handle, $row, ',', '"', '');
+            $csv(['id', 'name', 'email', 'system_role', 'location', 'team', 'staff_role', 'account_status', 'suspended_at', 'email_verified_at', 'last_login_at', 'created_at']);
 
             foreach ($users as $user) {
-                fputcsv($handle, [
+                $csv([
                     $user->id,
                     $user->name,
                     $user->email,
-                    $user->is_admin ? 'admin' : 'learner',
+                    $user->systemRoleLabel(),
+                    $user->preference?->location?->name ?? '',
+                    $user->preference?->team ?? '',
+                    $user->preference?->role ?? '',
                     $user->suspended_at ? 'suspended' : 'active',
                     $user->suspended_at?->format('Y-m-d H:i:s'),
                     $user->email_verified_at?->format('Y-m-d H:i:s'),
@@ -171,6 +186,7 @@ class AdminUserController extends Controller
             'q' => ['nullable', 'string', 'max:255'],
             'role' => ['nullable', Rule::in(array_merge(['all'], array_keys(self::roleFilterOptions()), self::LEGACY_ROLE_FILTERS))],
             'team' => ['nullable', Rule::in(array_keys(self::teamFilterOptions()))],
+            'location' => ['nullable', Rule::in(array_keys(self::locationFilterOptions()))],
             'account_status' => ['nullable', 'in:all,active,suspended'],
             'verification_status' => ['nullable', 'in:all,verified,unverified'],
             'inactivity_status' => ['nullable', 'in:all,never,inactive_30'],
@@ -308,6 +324,7 @@ class AdminUserController extends Controller
     public function show(User $user, AssignmentService $assignments): View
     {
         Gate::authorize('admin-access');
+        $this->authorizeTeamAccess($user);
 
         return view('app.admin-users-show', [
             'managedUser' => $user,
@@ -345,7 +362,7 @@ class AdminUserController extends Controller
 
                 return redirect()
                     ->route('app.admin.users.index')
-                    ->with('status', 'CSV import needs the columns: name, email, and optional role, team, is_admin, account_active, password.');
+                    ->with('status', 'CSV import needs the columns: name, email, and optional role, team, location, is_admin, account_active, password.');
             }
         }
 
@@ -413,9 +430,11 @@ class AdminUserController extends Controller
                 $updated++;
             }
 
+            $normalizedLocation = $this->normalizeImportedLocation($rowData['location'] ?? null);
             $this->syncUserPreference($user, [
                 'role' => $normalizedRole,
                 'team' => $normalizedTeam,
+                'location_id' => $normalizedLocation,
             ]);
         }
 
@@ -429,6 +448,7 @@ class AdminUserController extends Controller
     public function showExport(User $user, AssignmentService $assignments): StreamedResponse
     {
         Gate::authorize('admin-access');
+        $this->authorizeTeamAccess($user);
 
         $detailData = $this->userDetailData($user, $assignments);
         $filename = sprintf('user-detail-%s-%s.csv', $user->id, now()->format('Ymd-His'));
@@ -493,6 +513,7 @@ class AdminUserController extends Controller
     public function edit(User $user): View
     {
         Gate::authorize('admin-access');
+        $this->authorizeTeamAccess($user);
 
         return view('app.admin-users-form', [
             'managedUser' => $user,
@@ -503,6 +524,7 @@ class AdminUserController extends Controller
             'submitLabel' => 'Save User',
             'availableRoleOptions' => $this->formRoleOptions(),
             'availableTeamOptions' => $this->formTeamOptions(),
+            'availableLocationOptions' => $this->formLocationOptions(),
         ]);
     }
 
@@ -514,10 +536,21 @@ class AdminUserController extends Controller
 
         $validated = $this->validatedData($request, null, passwordRequired: ! $sendMagicLink);
 
+        $admin = $request->user();
+        $systemRole = $admin->isSiteAdmin() ? ($request->input('system_role', 'learner')) : 'learner';
+        $isAdmin = in_array($systemRole, ['site_admin', 'slt_manager', 'manager'], true);
+
         $user = User::query()->create([
             'name' => trim($validated['name']),
             'email' => trim($validated['email']),
-            'is_admin' => $request->boolean('is_admin'),
+            'is_admin' => $isAdmin,
+            'system_role' => $systemRole,
+            'managed_teams' => $admin->isSiteAdmin() && in_array($systemRole, ['manager', 'slt_manager'], true)
+                ? $request->input('managed_teams', [])
+                : null,
+            'managed_locations' => $admin->isSiteAdmin() && in_array($systemRole, ['manager', 'slt_manager'], true)
+                ? $request->input('managed_locations', [])
+                : null,
             'password' => $validated['password'] ?? Str::random(32),
             'suspended_at' => null,
             'email_verified_at' => null,
@@ -525,8 +558,16 @@ class AdminUserController extends Controller
 
         $this->syncUserPreference($user, $validated);
 
+        // Regular managers auto-assign new users to their own team
+        if (! $admin->canManageTeamAssignments() && ! empty($admin->managed_teams)) {
+            UserPreference::query()->updateOrCreate(
+                ['user_id' => $user->id],
+                ['team' => $admin->managed_teams[0]],
+            );
+        }
+
         $this->recordAuditEvent('user_created', $user, [
-            'changed_keys' => ['name', 'email', 'is_admin', 'password', 'role', 'team'],
+            'changed_keys' => ['name', 'email', 'system_role', 'password', 'role', 'team'],
         ]);
 
         $status = 'User created.';
@@ -550,6 +591,7 @@ class AdminUserController extends Controller
     public function update(Request $request, User $user): RedirectResponse
     {
         Gate::authorize('admin-access');
+        $this->authorizeTeamAccess($user);
 
         $before = [
             'name' => $user->name,
@@ -561,17 +603,33 @@ class AdminUserController extends Controller
         ];
         $validated = $this->validatedData($request, $user);
 
+        $admin = $request->user();
+
         $attributes = [
             'name' => trim($validated['name']),
             'email' => trim($validated['email']),
-            'is_admin' => $request->boolean('is_admin'),
             'suspended_at' => $request->boolean('account_active') ? null : now(),
         ];
 
+        // Only site admins can change system role and managed teams
+        if ($admin->isSiteAdmin()) {
+            $systemRole = $request->input('system_role', $user->system_role ?? 'learner');
+            $attributes['system_role'] = $systemRole;
+            $attributes['is_admin'] = in_array($systemRole, ['site_admin', 'slt_manager', 'manager'], true);
+            $attributes['managed_teams'] = in_array($systemRole, ['manager', 'slt_manager'], true)
+                ? $request->input('managed_teams', [])
+                : null;
+            $attributes['managed_locations'] = in_array($systemRole, ['manager', 'slt_manager'], true)
+                ? $request->input('managed_locations', [])
+                : null;
+        }
+
         $status = 'User updated.';
 
-        if ($user->id === $request->user()->id && $attributes['is_admin'] === false) {
+        if ($admin->isSiteAdmin() && $user->id === $admin->id && ! ($attributes['is_admin'] ?? true)) {
             $attributes['is_admin'] = true;
+            $attributes['system_role'] = 'site_admin';
+            $attributes['managed_teams'] = null;
             $status = 'User updated. Your admin access was preserved.';
         }
 
@@ -646,6 +704,7 @@ class AdminUserController extends Controller
     public function destroy(Request $request, User $user): RedirectResponse
     {
         Gate::authorize('admin-access');
+        $this->authorizeTeamAccess($user);
 
         if ($user->id === $request->user()->id) {
             return redirect()
@@ -669,7 +728,8 @@ class AdminUserController extends Controller
 
     public function toggleAdminAccess(Request $request, User $user): RedirectResponse
     {
-        Gate::authorize('admin-access');
+        Gate::authorize('admin-write');
+        $this->authorizeTeamAccess($user);
 
         $makeAdmin = ! $user->is_admin;
 
@@ -695,6 +755,7 @@ class AdminUserController extends Controller
     public function toggleAccountAccess(Request $request, User $user): RedirectResponse
     {
         Gate::authorize('admin-access');
+        $this->authorizeTeamAccess($user);
 
         $suspendAccount = $user->suspended_at === null;
 
@@ -726,6 +787,7 @@ class AdminUserController extends Controller
     public function toggleEmailVerification(User $user): RedirectResponse
     {
         Gate::authorize('admin-access');
+        $this->authorizeTeamAccess($user);
 
         $markVerified = $user->email_verified_at === null;
 
@@ -747,6 +809,7 @@ class AdminUserController extends Controller
     public function sendPasswordResetLink(User $user): RedirectResponse
     {
         Gate::authorize('admin-access');
+        $this->authorizeTeamAccess($user);
 
         PasswordBroker::broker()->sendResetLink([
             'email' => $user->email,
@@ -764,6 +827,7 @@ class AdminUserController extends Controller
     public function sendEmailVerificationLink(User $user): RedirectResponse
     {
         Gate::authorize('admin-access');
+        $this->authorizeTeamAccess($user);
 
         if ($user->email_verified_at !== null) {
             return redirect()
@@ -791,6 +855,7 @@ class AdminUserController extends Controller
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user?->id)],
             'role' => ['nullable', Rule::in(array_keys($this->formRoleOptions()))],
             'team' => ['nullable', Rule::in(array_keys($this->formTeamOptions()))],
+            'location_id' => ['nullable', 'integer', 'exists:locations,id'],
             'is_admin' => ['nullable', 'boolean'],
             'account_active' => ['nullable', 'boolean'],
             'password' => $passwordRules,
@@ -807,17 +872,30 @@ class AdminUserController extends Controller
         return Team::options();
     }
 
+    private function formLocationOptions(): array
+    {
+        return Location::ordered()->pluck('name', 'id')->toArray();
+    }
+
     private function syncUserPreference(User $user, array $validated): void
     {
         $roleKey = $validated['role'] ?? null;
-        $teamKey = $validated['team'] ?? null;
+        $admin = auth()->user();
+
+        $fields = [
+            'role' => $roleKey ? ($this->formRoleOptions()[$roleKey] ?? null) : null,
+        ];
+
+        // Only site admins and SLT managers can change team and location assignments
+        if ($admin->canManageTeamAssignments()) {
+            $teamKey = $validated['team'] ?? null;
+            $fields['team'] = $teamKey ? ($this->formTeamOptions()[$teamKey] ?? null) : null;
+            $fields['location_id'] = $validated['location_id'] ?? null;
+        }
 
         UserPreference::query()->updateOrCreate(
             ['user_id' => $user->id],
-            [
-                'role' => $roleKey ? ($this->formRoleOptions()[$roleKey] ?? null) : null,
-                'team' => $teamKey ? ($this->formTeamOptions()[$teamKey] ?? null) : null,
-            ]
+            $fields,
         );
     }
 
@@ -878,6 +956,29 @@ class AdminUserController extends Controller
         return null;
     }
 
+    private function normalizeImportedLocation(?string $location): ?int
+    {
+        $value = trim((string) $location);
+
+        if ($value === '') {
+            return null;
+        }
+
+        // Try exact name match (case-insensitive)
+        $found = Location::query()
+            ->whereRaw('LOWER(name) = ?', [Str::lower($value)])
+            ->first();
+
+        if ($found) {
+            return $found->id;
+        }
+
+        // Try slug match
+        $found = Location::query()->where('slug', Str::slug($value, '_'))->first();
+
+        return $found?->id;
+    }
+
     private function normalizeImportedBoolean(mixed $value, bool $default): bool
     {
         if ($value === null || $value === '') {
@@ -893,6 +994,7 @@ class AdminUserController extends Controller
             'q' => ['nullable', 'string', 'max:255'],
             'role' => ['nullable', Rule::in(array_merge(array_keys(self::roleFilterOptions()), self::LEGACY_ROLE_FILTERS))],
             'team' => ['nullable', Rule::in(array_keys(self::teamFilterOptions()))],
+            'location' => ['nullable', Rule::in(array_keys(self::locationFilterOptions()))],
             'account_status' => ['nullable', 'in:all,active,suspended'],
             'verification_status' => ['nullable', 'in:all,verified,unverified'],
             'inactivity_status' => ['nullable', 'in:all,never,inactive_30'],
@@ -938,6 +1040,7 @@ class AdminUserController extends Controller
     private function bulkPresetCounts(): array
     {
         $counts = [];
+        $admin = auth()->user();
 
         foreach (AdminUserBulkPresets::definitions() as $label => $preset) {
             $counts[$label] = AdminUserIndexFilters::filteredQuery(AdminUserIndexFilters::normalize([
@@ -948,7 +1051,7 @@ class AdminUserController extends Controller
                 'inactivity_status' => $preset['inactivity_status'] ?? 'all',
                 'attention_status' => $preset['attention_status'] ?? 'all',
                 'training_compliance' => 'all',
-            ]))->count();
+            ]), $admin)->count();
         }
 
         return $counts;
@@ -1105,5 +1208,19 @@ class AdminUserController extends Controller
             'action' => $action,
             'meta' => $meta,
         ]);
+    }
+
+    private function authorizeTeamAccess(User $user): void
+    {
+        $admin = auth()->user();
+        if ($admin->isSiteAdmin()) {
+            return;
+        }
+        if (! $admin->canManageTeam($user->preference?->team)) {
+            abort(403);
+        }
+        if (! $admin->canManageLocation($user->preference?->location?->name)) {
+            abort(403);
+        }
     }
 }

@@ -88,14 +88,38 @@
                                 <textarea id="inp-description" class="form-control" rows="3">{{ old('description', $course?->description) }}</textarea>
                             </div>
 
-                            <div class="mb-3">
+                            <div class="mb-3" x-data="topicManager()">
                                 <label for="topic" class="form-label fw-medium small">Topic</label>
-                                <select id="inp-topic" class="form-select">
+                                <select id="inp-topic" class="form-select" x-ref="topicSelect">
                                     <option value="">— Select topic —</option>
                                     @foreach ($topicOptions as $topicOpt)
                                         <option value="{{ $topicOpt }}" {{ old('topic', $course?->topic) === $topicOpt ? 'selected' : '' }}>{{ ucfirst($topicOpt) }}</option>
                                     @endforeach
                                 </select>
+
+                                {{-- Inline new topic creation --}}
+                                <div class="mt-2">
+                                    <template x-if="!showForm">
+                                        <button type="button" class="btn btn-sm btn-link text-decoration-none p-0" @click="showForm = true">
+                                            <i class="bi bi-plus-circle me-1"></i>Add new topic
+                                        </button>
+                                    </template>
+                                    <template x-if="showForm">
+                                        <div class="d-flex gap-2 align-items-start">
+                                            <div class="flex-grow-1">
+                                                <input type="text" class="form-control form-control-sm" placeholder="New topic name" x-model="newTopic" x-ref="newTopicInput" @keydown.enter.prevent="save()" @keydown.escape="cancel()" maxlength="100">
+                                                <template x-if="error">
+                                                    <div class="text-danger small mt-1" x-text="error"></div>
+                                                </template>
+                                            </div>
+                                            <button type="button" class="btn btn-sm btn-theme" @click="save()" :disabled="saving">
+                                                <template x-if="saving"><span class="spinner-border spinner-border-sm" role="status"></span></template>
+                                                <template x-if="!saving">Add</template>
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" @click="cancel()">Cancel</button>
+                                        </div>
+                                    </template>
+                                </div>
                             </div>
 
                             <div class="mb-3">
@@ -130,11 +154,16 @@
                                 </div>
                                 <div class="col-md-4">
                                     <label for="status" class="form-label fw-medium small">Status</label>
-                                    <select id="inp-status" class="form-select" required>
+                                    <select id="inp-status" class="form-select" required {{ $course?->status === 'published' ? 'disabled' : '' }}>
                                         @foreach (['draft', 'published', 'archived'] as $s)
                                             <option value="{{ $s }}" {{ old('status', $course?->status ?? 'draft') === $s ? 'selected' : '' }}>{{ ucfirst($s) }}</option>
                                         @endforeach
                                     </select>
+                                    @if ($course?->status === 'published')
+                                        <div class="form-text text-warning">
+                                            <i class="bi bi-exclamation-triangle me-1"></i>Saving changes will revert this course to <strong>draft</strong> for review.
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
                         </div>
@@ -317,7 +346,8 @@ window.submitCourseForm = function () {
     document.getElementById('hid-topic').value = document.getElementById('inp-topic').value;
     document.getElementById('hid-estimated_minutes').value = document.getElementById('inp-estimated_minutes').value;
     document.getElementById('hid-reinforcement_delay_days').value = document.getElementById('inp-reinforcement_delay_days').value;
-    document.getElementById('hid-status').value = document.getElementById('inp-status').value;
+    var statusEl = document.getElementById('inp-status');
+    document.getElementById('hid-status').value = statusEl.disabled ? statusEl.querySelector('[selected]').value : statusEl.value;
 
     var rolesContainer = document.getElementById('hid-roles');
     rolesContainer.innerHTML = '';
@@ -343,5 +373,75 @@ window.submitCourseForm = function () {
 
     document.getElementById('course-form').submit();
 };
+
+function topicManager() {
+    return {
+        showForm: false,
+        newTopic: '',
+        error: '',
+        saving: false,
+
+        cancel() {
+            this.showForm = false;
+            this.newTopic = '';
+            this.error = '';
+        },
+
+        async save() {
+            const name = this.newTopic.trim();
+            if (!name) {
+                this.error = 'Please enter a topic name.';
+                return;
+            }
+            this.error = '';
+            this.saving = true;
+
+            try {
+                const res = await fetch('{{ route("app.admin.topics.store") }}', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: JSON.stringify({ name: name }),
+                });
+
+                const json = await res.json();
+
+                if (!res.ok) {
+                    this.error = json.error || json.message || 'Failed to create topic.';
+                    return;
+                }
+
+                // Add the new topic to the select dropdown and select it
+                const select = this.$refs.topicSelect;
+                const option = document.createElement('option');
+                option.value = json.name;
+                option.textContent = json.name.charAt(0).toUpperCase() + json.name.slice(1);
+                select.appendChild(option);
+                select.value = json.name;
+
+                // Also add to the module topic filter if it exists
+                const moduleFilter = document.getElementById('module-topic-filter');
+                if (moduleFilter && ![...moduleFilter.options].some(o => o.value === json.name)) {
+                    const filterOpt = document.createElement('option');
+                    filterOpt.value = json.name;
+                    filterOpt.textContent = json.name.charAt(0).toUpperCase() + json.name.slice(1);
+                    moduleFilter.appendChild(filterOpt);
+                }
+
+                this.cancel();
+            } catch (e) {
+                this.error = 'Network error. Please try again.';
+                console.error('Topic create failed:', e);
+            } finally {
+                this.saving = false;
+            }
+        }
+    };
+}
 </script>
 @endpush

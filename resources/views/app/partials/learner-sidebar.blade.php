@@ -36,6 +36,18 @@
                 </a>
             </li>
             <li class="nav-item">
+                <a href="{{ route('app.leaderboard') }}" class="nav-link {{ $active === 'leaderboard' ? 'active' : '' }}">
+                    <i class="menu-icon bi bi-trophy"></i>
+                    <span class="menu-name">Leaderboard</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('app.badges') }}" class="nav-link {{ $active === 'badges' ? 'active' : '' }}">
+                    <i class="menu-icon bi bi-award"></i>
+                    <span class="menu-name">Badges</span>
+                </a>
+            </li>
+            <li class="nav-item">
                 <a href="{{ route('app.reminders') }}" class="nav-link {{ $active === 'reminders' ? 'active' : '' }}">
                     <i class="menu-icon bi bi-bell"></i>
                     <span class="menu-name">Reminders</span>

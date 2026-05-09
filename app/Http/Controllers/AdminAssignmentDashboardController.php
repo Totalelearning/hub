@@ -297,6 +297,7 @@ class AdminAssignmentDashboardController extends Controller
 
         $users = User::query()
             ->with('preference')
+            ->forManagedScope(auth()->user())
             ->orderBy('name')
             ->get()
             ->filter(fn (User $user) => strtolower((string) $user->preference?->role) === $normalizedRole)
@@ -369,6 +370,7 @@ class AdminAssignmentDashboardController extends Controller
 
         $users = User::query()
             ->with('preference')
+            ->forManagedScope(auth()->user())
             ->orderBy('name')
             ->get()
             ->filter(fn (User $user) => filled($user->preference?->role))
@@ -417,6 +419,7 @@ class AdminAssignmentDashboardController extends Controller
     public function user(User $user, AssignmentService $assignments): View
     {
         Gate::authorize('admin-access');
+        $this->authorizeTeamAccess($user);
 
         $detailData = $this->learnerDetailData($user, $assignments);
 
@@ -428,6 +431,7 @@ class AdminAssignmentDashboardController extends Controller
     public function userExport(User $user, AssignmentService $assignments): StreamedResponse
     {
         Gate::authorize('admin-access');
+        $this->authorizeTeamAccess($user);
 
         $detailData = $this->learnerDetailData($user, $assignments);
         $latestScormProof = $this->latestLearnerScormProof($user);
@@ -547,6 +551,7 @@ class AdminAssignmentDashboardController extends Controller
     public function userEvents(User $user, Request $request): View
     {
         Gate::authorize('admin-access');
+        $this->authorizeTeamAccess($user);
 
         $eventType = trim((string) $request->query('event_type', ''));
         $entityType = strtolower(trim((string) $request->query('entity_type', '')));
@@ -679,6 +684,7 @@ class AdminAssignmentDashboardController extends Controller
     public function userEventsExport(User $user, Request $request): StreamedResponse
     {
         Gate::authorize('admin-access');
+        $this->authorizeTeamAccess($user);
 
         $eventType = trim((string) $request->query('event_type', ''));
         $entityType = strtolower(trim((string) $request->query('entity_type', '')));
@@ -958,6 +964,7 @@ class AdminAssignmentDashboardController extends Controller
         // --- Course completion data (from course_user pivot) ---
         $users = User::query()
             ->with('preference')
+            ->forManagedScope(auth()->user())
             ->orderBy('name')
             ->get()
             ->filter(fn (User $user) => filled($user->preference?->role))
@@ -2220,6 +2227,14 @@ class AdminAssignmentDashboardController extends Controller
             'action' => $action,
             'meta' => $meta,
         ]);
+    }
+
+    private function authorizeTeamAccess(User $user): void
+    {
+        $admin = auth()->user();
+        if (! $admin->isSiteAdmin() && ! $admin->canManageTeam($user->preference?->team)) {
+            abort(403);
+        }
     }
 
     private function auditTableExists(): bool

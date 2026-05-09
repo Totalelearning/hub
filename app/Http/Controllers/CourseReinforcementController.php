@@ -104,6 +104,15 @@ class CourseReinforcementController extends Controller
             ],
         ]);
 
+        // Award gamification XP for completing the knowledge check
+        $gamification = app(\App\Services\GamificationService::class);
+        $gamification->awardReinforcementCompletion($user = auth()->user(), $attempt);
+        if (! $hasGaps && $scorePercent >= 100) {
+            $gamification->awardPerfectScore($user, $attempt);
+        }
+        $gamification->recordActivity($user);
+        $gamification->evaluateBadges($user);
+
         // If gaps found, reset progress on the failing modules and update course status
         if ($hasGaps) {
             foreach ($incorrectModuleIds as $moduleId) {

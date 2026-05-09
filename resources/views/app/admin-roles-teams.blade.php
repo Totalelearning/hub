@@ -20,11 +20,11 @@
                         <nav aria-label="breadcrumb" class="mb-2">
                             <ol class="breadcrumb mb-0 small">
                                 <li class="breadcrumb-item"><a href="{{ route('app.admin.assignments') }}">Dashboard</a></li>
-                                <li class="breadcrumb-item active" aria-current="page">Roles & Teams</li>
+                                <li class="breadcrumb-item active" aria-current="page">Roles, Teams & Locations</li>
                             </ol>
                         </nav>
-                        <h1 class="fs-3 fw-semibold mb-2">Roles & Teams</h1>
-                        <p class="text-secondary mb-0">Manage the roles and teams available across the platform. Changes here update filters, user forms, compliance rules, and content targeting.</p>
+                        <h1 class="fs-3 fw-semibold mb-2">Roles, Teams & Locations</h1>
+                        <p class="text-secondary mb-0">Manage the roles, teams, and school locations available across the platform. Changes here update filters, user forms, compliance rules, and content targeting.</p>
                     </div>
                     <div class="col-12 col-lg-5 d-flex flex-wrap gap-2 justify-content-lg-end">
                         <a href="{{ route('app.admin.users.index') }}" class="btn btn-outline-theme btn-sm">Back to Users</a>
@@ -84,6 +84,30 @@
                             <div class="admin-feed-kpi-stat">{{ \App\Models\UserPreference::whereNotNull('team')->where('team', '!=', '')->count() }}</div>
                             <div class="fw-semibold mt-1">Users with Team</div>
                             <div class="small text-secondary mt-auto pt-2">Assigned</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Additional KPI cards for locations --}}
+            <div class="row g-4 mb-4">
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="card adminuiux-card shadow-sm h-100 admin-feed-kpi">
+                        <div class="card-body d-flex flex-column align-items-center text-center p-4">
+                            <div class="admin-feed-kpi-icon mb-3"><i class="bi bi-building fs-3"></i></div>
+                            <div class="admin-feed-kpi-stat">{{ $locations->count() }}</div>
+                            <div class="fw-semibold mt-1">Locations</div>
+                            <div class="small text-secondary mt-auto pt-2">Schools / sites</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="card adminuiux-card shadow-sm h-100 admin-feed-kpi">
+                        <div class="card-body d-flex flex-column align-items-center text-center p-4">
+                            <div class="admin-feed-kpi-icon mb-3"><i class="bi bi-geo-alt fs-3"></i></div>
+                            <div class="admin-feed-kpi-stat">{{ \App\Models\UserPreference::whereNotNull('location_id')->count() }}</div>
+                            <div class="fw-semibold mt-1">Users with Location</div>
+                            <div class="small text-secondary mt-auto pt-2">Assigned to a school</div>
                         </div>
                     </div>
                 </div>
@@ -231,6 +255,90 @@
                                         </tr>
                                     @empty
                                         <tr><td colspan="5" class="text-center text-secondary py-4">No teams defined yet.</td></tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Locations --}}
+            <div class="row g-4">
+                <div class="col-12">
+                    <div class="card adminuiux-card shadow-sm mb-4">
+                        <div class="card-header bg-primary-subtle d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="fw-semibold">Locations</div>
+                                <div class="small text-secondary">School sites and trust locations. Each user can be assigned to one location for cross-school reporting.</div>
+                            </div>
+                        </div>
+
+                        {{-- Add location form --}}
+                        <div class="card-body border-bottom py-3">
+                            <form method="POST" action="{{ route('app.admin.roles-teams.locations.store') }}" class="row g-2 align-items-end">
+                                @csrf
+                                <div class="col">
+                                    <label for="new_location_name" class="form-label small mb-0">New Location</label>
+                                    <input type="text" name="name" id="new_location_name" class="form-control form-control-sm" placeholder="e.g. Oakwood Primary Academy" required>
+                                </div>
+                                <div class="col-auto">
+                                    <button type="submit" class="btn btn-sm btn-theme"><i class="bi bi-plus-lg me-1"></i>Add</button>
+                                </div>
+                            </form>
+                        </div>
+
+                        {{-- Locations list --}}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="small fw-semibold">#</th>
+                                        <th class="small fw-semibold">Name</th>
+                                        <th class="small fw-semibold">Slug</th>
+                                        <th class="small fw-semibold text-center">Users</th>
+                                        <th class="small fw-semibold text-center">Active</th>
+                                        <th class="small fw-semibold text-end">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse ($locations as $location)
+                                        @php $locationUserCount = \App\Models\UserPreference::where('location_id', $location->id)->count(); @endphp
+                                        <tr>
+                                            <td class="small text-secondary">{{ $location->sort_order }}</td>
+                                            <td>
+                                                <form method="POST" action="{{ route('app.admin.roles-teams.locations.update', $location) }}" class="d-flex gap-2 align-items-center" id="location-form-{{ $location->id }}">
+                                                    @csrf @method('PATCH')
+                                                    <input type="text" name="name" value="{{ $location->name }}" class="form-control form-control-sm" style="min-width:220px;" required>
+                                                </form>
+                                            </td>
+                                            <td class="small text-secondary">{{ $location->slug }}</td>
+                                            <td class="text-center">
+                                                @if ($locationUserCount > 0)
+                                                    <span class="badge bg-primary-subtle text-primary">{{ $locationUserCount }}</span>
+                                                @else
+                                                    <span class="text-secondary small">0</span>
+                                                @endif
+                                            </td>
+                                            <td class="text-center">
+                                                @if ($location->is_active)
+                                                    <span class="badge bg-success-subtle text-success">Active</span>
+                                                @else
+                                                    <span class="badge bg-secondary-subtle text-secondary">Inactive</span>
+                                                @endif
+                                            </td>
+                                            <td class="text-end">
+                                                <div class="d-flex gap-1 justify-content-end">
+                                                    <button type="submit" form="location-form-{{ $location->id }}" class="btn btn-sm btn-outline-primary" title="Save"><i class="bi bi-check-lg"></i></button>
+                                                    <form method="POST" action="{{ route('app.admin.roles-teams.locations.destroy', $location) }}" onsubmit="return confirm('Delete location &quot;{{ $location->name }}&quot;?{{ $locationUserCount > 0 ? ' This will unset the location for ' . $locationUserCount . ' user(s).' : '' }}')">
+                                                        @csrf @method('DELETE')
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr><td colspan="6" class="text-center text-secondary py-4">No locations defined yet.</td></tr>
                                     @endforelse
                                 </tbody>
                             </table>

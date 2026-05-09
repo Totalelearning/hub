@@ -30,7 +30,7 @@ class AdminRankingSettingsController extends Controller
         RankingHealthService $health,
     ): View
     {
-        Gate::authorize('admin-access');
+        Gate::authorize('admin-write');
 
         $selectedProvider = $this->normalizeProviderFilter($request->query('ranking_provider'));
         $selectedTrigger = $this->normalizeTriggerFilter($request->query('ranking_severity_trigger'));
@@ -85,7 +85,7 @@ class AdminRankingSettingsController extends Controller
 
     public function update(Request $request, RankingSettingsService $settings, RankingHealthService $health, RankingSeverityAuditService $severityAudit): RedirectResponse
     {
-        Gate::authorize('admin-access');
+        Gate::authorize('admin-write');
         $beforeHealth = $health->snapshot();
 
         $validated = $request->validate([
@@ -130,7 +130,7 @@ class AdminRankingSettingsController extends Controller
 
     public function reset(RankingSettingsService $settings, RankingHealthService $health, RankingSeverityAuditService $severityAudit): RedirectResponse
     {
-        Gate::authorize('admin-access');
+        Gate::authorize('admin-write');
         $beforeHealth = $health->snapshot();
 
         $before = $settings->all();
@@ -149,7 +149,7 @@ class AdminRankingSettingsController extends Controller
 
     public function testProvider(RankingProviderProbeService $probeService, RankingHealthService $health, RankingSeverityAuditService $severityAudit): RedirectResponse
     {
-        Gate::authorize('admin-access');
+        Gate::authorize('admin-write');
         $beforeHealth = $health->snapshot();
 
         $result = $probeService->probe();
@@ -176,7 +176,7 @@ class AdminRankingSettingsController extends Controller
 
     public function exportProbes(Request $request, RankingHealthService $health): StreamedResponse
     {
-        Gate::authorize('admin-access');
+        Gate::authorize('admin-write');
 
         $selectedProvider = $this->normalizeProviderFilter($request->query('ranking_provider'));
         $exportFrom = $this->normalizeExportDate($request->query('ranking_export_from'));
@@ -216,7 +216,7 @@ class AdminRankingSettingsController extends Controller
 
     public function exportSeverityTransitions(Request $request, RankingHealthService $health): StreamedResponse
     {
-        Gate::authorize('admin-access');
+        Gate::authorize('admin-write');
 
         $selectedTrigger = $this->normalizeTriggerFilter($request->query('ranking_severity_trigger'));
         $exportFrom = $this->normalizeExportDate($request->query('ranking_export_from'));
@@ -258,7 +258,7 @@ class AdminRankingSettingsController extends Controller
 
     public function exportIncidentBundle(Request $request, RankingHealthService $health): Response
     {
-        Gate::authorize('admin-access');
+        Gate::authorize('admin-write');
 
         $selectedProvider = $this->normalizeProviderFilter($request->query('ranking_provider'));
         $selectedTrigger = $this->normalizeTriggerFilter($request->query('ranking_severity_trigger'));

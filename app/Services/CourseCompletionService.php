@@ -51,6 +51,12 @@ class CourseCompletionService
                 'completed_at' => now(),
             ]);
 
+        // Award gamification XP, update streak, and evaluate badges
+        $gamification = app(\App\Services\GamificationService::class);
+        $gamification->awardCourseCompletion($user, $course);
+        $gamification->recordActivity($user);
+        $gamification->evaluateBadges($user);
+
         return true;
     }
 

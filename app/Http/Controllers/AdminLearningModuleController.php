@@ -93,7 +93,7 @@ class AdminLearningModuleController extends Controller
 
     public function create(): View
     {
-        Gate::authorize('admin-access');
+        Gate::authorize('admin-write');
 
         return view('app.admin-learning-modules-form', $this->createFormData(
             new LearningModule([
@@ -114,7 +114,7 @@ class AdminLearningModuleController extends Controller
 
     public function createScorm(): View
     {
-        Gate::authorize('admin-access');
+        Gate::authorize('admin-write');
 
         return view('app.admin-learning-modules-form', $this->createFormData(
             new LearningModule([
@@ -316,7 +316,7 @@ class AdminLearningModuleController extends Controller
 
     public function resetDemoData(): RedirectResponse
     {
-        Gate::authorize('admin-access');
+        Gate::authorize('admin-write');
 
         $exitCode = Artisan::call('db:seed', ['--class' => PrototypeDemoSeeder::class, '--force' => true]);
         $status = $exitCode === 0
@@ -378,8 +378,9 @@ class AdminLearningModuleController extends Controller
             ->avg() ?? 0));
         $learnerCount = $progressRows->pluck('user_id')->unique()->count();
         $completedCount = $progressRows->where('status', 'completed')->count();
-        $completionRate = $learnerCount > 0
-            ? (int) round(($completedCount / $learnerCount) * 100)
+        $totalEnrollments = $progressRows->count();
+        $completionRate = $totalEnrollments > 0
+            ? (int) round(($completedCount / $totalEnrollments) * 100)
             : 0;
 
         $moduleRows = $modules->map(function (LearningModule $module) use ($progressRows, $runtimeEvents, $launchEvents) {
@@ -809,7 +810,7 @@ class AdminLearningModuleController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        Gate::authorize('admin-access');
+        Gate::authorize('admin-write');
 
         $validated = $this->validatedData($request);
 
@@ -833,7 +834,7 @@ class AdminLearningModuleController extends Controller
 
     public function edit(LearningModule $module): View
     {
-        Gate::authorize('admin-access');
+        Gate::authorize('admin-write');
 
         $recentScormAttempts = LearningEvent::query()
             ->with('user')
@@ -918,7 +919,7 @@ class AdminLearningModuleController extends Controller
 
     public function update(Request $request, LearningModule $module): RedirectResponse
     {
-        Gate::authorize('admin-access');
+        Gate::authorize('admin-write');
 
         $validated = $this->validatedData($request, $module);
 
@@ -946,7 +947,7 @@ class AdminLearningModuleController extends Controller
 
     public function draftReinforcementQuestions(LearningModule $module, ReinforcementQuestionDraftService $drafts): RedirectResponse
     {
-        Gate::authorize('admin-access');
+        Gate::authorize('admin-write');
 
         $questionSet = $drafts->draftForModule($module);
 
@@ -961,7 +962,7 @@ class AdminLearningModuleController extends Controller
 
     public function updateReinforcementQuestions(Request $request, LearningModule $module): RedirectResponse
     {
-        Gate::authorize('admin-access');
+        Gate::authorize('admin-write');
 
         $questionSet = $this->latestReinforcementQuestionSet($module);
         abort_unless($questionSet !== null, 404);
@@ -1012,7 +1013,7 @@ class AdminLearningModuleController extends Controller
 
     public function approveReinforcementQuestions(LearningModule $module): RedirectResponse
     {
-        Gate::authorize('admin-access');
+        Gate::authorize('admin-write');
 
         $questionSet = $this->latestReinforcementQuestionSet($module);
         abort_unless($questionSet !== null, 404);
@@ -1056,7 +1057,7 @@ class AdminLearningModuleController extends Controller
 
     public function uploadScorm(Request $request, LearningModule $module, ScormPackageService $scorm): RedirectResponse
     {
-        Gate::authorize('admin-access');
+        Gate::authorize('admin-write');
 
         $validated = $request->validate([
             'scorm_package' => ['required', 'file', 'extensions:zip', 'max:51200'],
@@ -1091,7 +1092,7 @@ class AdminLearningModuleController extends Controller
 
     public function activateScormPackage(LearningModule $module, LearningAsset $asset): RedirectResponse
     {
-        Gate::authorize('admin-access');
+        Gate::authorize('admin-write');
 
         abort_unless($asset->learning_module_id === $module->id, 404);
         abort_unless($asset->asset_type === 'scorm_package', 404);
@@ -1131,7 +1132,7 @@ class AdminLearningModuleController extends Controller
 
     public function transition(Request $request, LearningModule $module): RedirectResponse
     {
-        Gate::authorize('admin-access');
+        Gate::authorize('admin-write');
 
         $validated = $request->validate([
             'status' => ['required', 'in:draft,published,archived'],
@@ -1155,7 +1156,7 @@ class AdminLearningModuleController extends Controller
 
     public function bulkTransition(Request $request): RedirectResponse
     {
-        Gate::authorize('admin-access');
+        Gate::authorize('admin-write');
 
         $validated = $request->validate([
             'status' => ['required', 'in:draft,published,archived'],

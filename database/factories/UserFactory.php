@@ -47,6 +47,25 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'is_admin' => true,
+            'system_role' => 'site_admin',
+        ]);
+    }
+
+    public function sltManager(array $teams = []): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_admin' => true,
+            'system_role' => 'slt_manager',
+            'managed_teams' => $teams,
+        ]);
+    }
+
+    public function manager(array $teams = []): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_admin' => true,
+            'system_role' => 'manager',
+            'managed_teams' => $teams,
         ]);
     }
 }

@@ -4,6 +4,8 @@ use App\Http\Controllers\AdminAssignmentDashboardController;
 use App\Http\Controllers\AdminAiUsageController;
 use App\Http\Controllers\AdminComplianceReportController;
 use App\Http\Controllers\AdminCourseAnalyticsController;
+use App\Http\Controllers\AdminGamificationController;
+use App\Http\Controllers\AdminLocationComparisonController;
 use App\Http\Controllers\AdminCourseController;
 use App\Http\Controllers\AdminTopicController;
 use App\Http\Controllers\AdminFeedScoringController;
@@ -14,8 +16,10 @@ use App\Http\Controllers\AdminRankingSettingsController;
 use App\Http\Controllers\AdminReminderSettingsController;
 use App\Http\Controllers\AdminRolesTeamsController;
 use App\Http\Controllers\AdminUserController;
+use App\Http\Controllers\AppBadgesController;
 use App\Http\Controllers\AppFeedController;
 use App\Http\Controllers\CourseReinforcementController;
+use App\Http\Controllers\AppLeaderboardController;
 use App\Http\Controllers\AppLearningPathController;
 use App\Http\Controllers\AppLearningEventController;
 use App\Http\Controllers\AppFeedSaveController;
@@ -112,6 +116,14 @@ Route::prefix('app')->middleware('auth')->group(function () {
     Route::delete('admin/roles-teams/teams/{team}', [AdminRolesTeamsController::class, 'destroyTeam'])
         ->whereNumber('team')
         ->name('app.admin.roles-teams.teams.destroy');
+    Route::post('admin/roles-teams/locations', [AdminRolesTeamsController::class, 'storeLocation'])
+        ->name('app.admin.roles-teams.locations.store');
+    Route::patch('admin/roles-teams/locations/{location}', [AdminRolesTeamsController::class, 'updateLocation'])
+        ->whereNumber('location')
+        ->name('app.admin.roles-teams.locations.update');
+    Route::delete('admin/roles-teams/locations/{location}', [AdminRolesTeamsController::class, 'destroyLocation'])
+        ->whereNumber('location')
+        ->name('app.admin.roles-teams.locations.destroy');
     Route::get('admin/ai/usages', AdminAiUsageController::class)
         ->name('app.admin.ai-usages');
     Route::get('admin/ai/usages/export', [AdminAiUsageController::class, 'export'])
@@ -233,9 +245,38 @@ Route::prefix('app')->middleware('auth')->group(function () {
         ->name('app.admin.course-analytics');
     Route::get('admin/course-analytics/export', [AdminCourseAnalyticsController::class, 'export'])
         ->name('app.admin.course-analytics.export');
+    Route::get('admin/course-analytics/courses-json', [AdminCourseAnalyticsController::class, 'coursesJson'])
+        ->name('app.admin.course-analytics.courses-json');
+    Route::get('admin/course-analytics/hotspots-json', [AdminCourseAnalyticsController::class, 'hotspotsJson'])
+        ->name('app.admin.course-analytics.hotspots-json');
+    Route::get('admin/course-analytics/attempts-json', [AdminCourseAnalyticsController::class, 'attemptsJson'])
+        ->name('app.admin.course-analytics.attempts-json');
+    Route::get('admin/course-analytics/gaps', [AdminCourseAnalyticsController::class, 'gapsJson'])
+        ->name('app.admin.course-analytics.gaps');
+    Route::get('admin/course-analytics/attempts/{attempt}', [AdminCourseAnalyticsController::class, 'showAttempt'])
+        ->whereNumber('attempt')
+        ->name('app.admin.course-analytics.attempt');
+
+    Route::get('admin/gamification', [AdminGamificationController::class, 'index'])
+        ->name('app.admin.gamification');
+    Route::get('admin/gamification/export', [AdminGamificationController::class, 'export'])
+        ->name('app.admin.gamification.export');
+    Route::get('admin/gamification/settings', [AdminGamificationController::class, 'settings'])
+        ->name('app.admin.gamification.settings');
+    Route::post('admin/gamification/settings', [AdminGamificationController::class, 'updateSettings'])
+        ->name('app.admin.gamification.settings.update');
+    Route::post('admin/gamification/settings/reset', [AdminGamificationController::class, 'resetSettings'])
+        ->name('app.admin.gamification.settings.reset');
+
+    Route::get('admin/locations', [AdminLocationComparisonController::class, 'index'])
+        ->name('app.admin.locations.index');
+    Route::get('admin/locations/export', [AdminLocationComparisonController::class, 'export'])
+        ->name('app.admin.locations.export');
 
     Route::post('admin/topics', [AdminTopicController::class, 'store'])
         ->name('app.admin.topics.store');
+    Route::get('admin/topics/{topic}/check', [AdminTopicController::class, 'check'])
+        ->name('app.admin.topics.check');
     Route::delete('admin/topics/{topic}', [AdminTopicController::class, 'destroy'])
         ->name('app.admin.topics.destroy');
 
@@ -283,6 +324,8 @@ Route::prefix('app')->middleware('auth')->group(function () {
         ->name('app.admin.assignments.user');
     Route::get('admin/assignments/compliance-areas/{area}', [AdminAssignmentDashboardController::class, 'complianceArea'])
         ->name('app.admin.assignments.compliance-area');
+    Route::get('leaderboard', [AppLeaderboardController::class, 'index'])->name('app.leaderboard');
+    Route::get('badges', [AppBadgesController::class, 'index'])->name('app.badges');
     Route::get('feed', [AppFeedController::class, 'index'])->name('app.feed');
     Route::get('feed/required', [AppFeedController::class, 'required'])->name('app.feed.required');
     Route::get('feed/recommended', [AppFeedController::class, 'recommended'])->name('app.feed.recommended');

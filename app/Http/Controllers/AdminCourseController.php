@@ -31,7 +31,7 @@ class AdminCourseController extends Controller
 
     public function create(): View
     {
-        Gate::authorize('admin-access');
+        Gate::authorize('admin-write');
 
         $modules = LearningModule::orderBy('title')->get(['id', 'title', 'topic', 'source_type']);
 
@@ -46,7 +46,7 @@ class AdminCourseController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        Gate::authorize('admin-access');
+        Gate::authorize('admin-write');
 
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
@@ -116,7 +116,7 @@ class AdminCourseController extends Controller
 
     public function update(Request $request, Course $course): RedirectResponse
     {
-        Gate::authorize('admin-access');
+        Gate::authorize('admin-write');
 
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
@@ -133,6 +133,10 @@ class AdminCourseController extends Controller
 
         $targetRoles = $validated['target_roles'] ?? [];
 
+        // If a published course is edited, revert to draft so it can be reviewed before re-publishing
+        $wasPublished = $course->status === 'published';
+        $newStatus = $wasPublished ? 'draft' : $validated['status'];
+
         $course->update([
             'title' => $validated['title'],
             'description' => $validated['description'] ?? null,
@@ -140,20 +144,25 @@ class AdminCourseController extends Controller
             'target_roles' => $targetRoles,
             'estimated_minutes' => $validated['estimated_minutes'] ?? null,
             'reinforcement_delay_days' => $validated['reinforcement_delay_days'] ?? 30,
-            'status' => $validated['status'],
+            'status' => $newStatus,
         ]);
 
         $this->syncModules($course, $validated['modules'] ?? []);
         $this->autoAssignUsers($course, $targetRoles);
 
+        $message = "Course \"{$course->title}\" updated.";
+        if ($wasPublished) {
+            $message .= ' Status changed to draft for review.';
+        }
+
         return redirect()
             ->route('app.admin.modules.index')
-            ->with('status', "Course \"{$course->title}\" updated.");
+            ->with('status', $message);
     }
 
     public function bulkTransition(Request $request): RedirectResponse
     {
-        Gate::authorize('admin-access');
+        Gate::authorize('admin-write');
 
         $validated = $request->validate([
             'status' => ['required', 'in:draft,published,archived'],
@@ -171,7 +180,7 @@ class AdminCourseController extends Controller
 
     public function destroy(Course $course): RedirectResponse
     {
-        Gate::authorize('admin-access');
+        Gate::authorize('admin-write');
 
         $title = $course->title;
         $course->delete();

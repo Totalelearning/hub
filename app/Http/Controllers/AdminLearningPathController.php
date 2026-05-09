@@ -23,7 +23,7 @@ class AdminLearningPathController extends Controller
 
     public function create(): View
     {
-        Gate::authorize('admin-access');
+        Gate::authorize('admin-write');
 
         return view('app.admin-learning-paths-form', [
             'path' => new LearningPath([
@@ -40,7 +40,7 @@ class AdminLearningPathController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        Gate::authorize('admin-access');
+        Gate::authorize('admin-write');
 
         $validated = $this->validatedData($request);
         $path = LearningPath::query()->create($validated['attributes']);
@@ -79,7 +79,7 @@ class AdminLearningPathController extends Controller
 
     public function update(Request $request, LearningPath $path): RedirectResponse
     {
-        Gate::authorize('admin-access');
+        Gate::authorize('admin-write');
 
         $validated = $this->validatedData($request);
         $path->update($validated['attributes']);

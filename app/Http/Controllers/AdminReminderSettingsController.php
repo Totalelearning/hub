@@ -14,7 +14,7 @@ class AdminReminderSettingsController extends Controller
 {
     public function edit(AssignmentSettingsService $settings): View
     {
-        Gate::authorize('admin-access');
+        Gate::authorize('admin-write');
 
         return view('app.admin-reminder-settings', [
             'settings' => $settings->all(),
@@ -24,7 +24,7 @@ class AdminReminderSettingsController extends Controller
 
     public function update(Request $request, AssignmentSettingsService $settings): RedirectResponse
     {
-        Gate::authorize('admin-access');
+        Gate::authorize('admin-write');
 
         $defaults = $settings->defaults();
         $rules = ['settings' => ['required', 'array']];
@@ -51,7 +51,7 @@ class AdminReminderSettingsController extends Controller
 
     public function reset(AssignmentSettingsService $settings): RedirectResponse
     {
-        Gate::authorize('admin-access');
+        Gate::authorize('admin-write');
 
         $before = $settings->all();
         $settings->resetToDefaults();

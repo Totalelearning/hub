@@ -185,7 +185,7 @@
             </div>
 
             {{-- Topics --}}
-            <div class="card adminuiux-card shadow-sm mb-4">
+            <div class="card adminuiux-card shadow-sm mb-4" x-data="topicDeleter()">
                 <div class="card-body p-4">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h6 class="fw-semibold mb-0">Topics</h6>
@@ -196,13 +196,12 @@
                     @endif
                     <div class="d-flex flex-wrap gap-2 mb-3">
                         @foreach ($topics as $topic)
-                            <span class="badge rounded-pill bg-light border text-dark d-inline-flex align-items-center gap-1 py-2 px-3">
+                            <span class="badge rounded-pill bg-light border text-dark d-inline-flex align-items-center gap-1 py-2 px-3" id="topic-badge-{{ $topic->id }}">
                                 {{ ucfirst($topic->name) }}
-                                <form action="{{ route('app.admin.topics.destroy', $topic) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete topic \'{{ $topic->name }}\'?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-link btn-sm text-danger p-0 ms-1" style="font-size:.7rem;line-height:1;" title="Remove"><i class="bi bi-x-lg"></i></button>
-                                </form>
+                                <button type="button" class="btn btn-link btn-sm text-danger p-0 ms-1" style="font-size:.7rem;line-height:1;" title="Remove"
+                                    @click="confirmDelete({{ $topic->id }}, '{{ addslashes($topic->name) }}', '{{ route('app.admin.topics.check', $topic) }}', '{{ route('app.admin.topics.destroy', $topic) }}')">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
                             </span>
                         @endforeach
                     </div>
@@ -211,6 +210,45 @@
                         <input type="text" name="name" class="form-control form-control-sm" placeholder="New topic name..." required>
                         <button type="submit" class="btn btn-theme btn-sm text-nowrap">Add Topic</button>
                     </form>
+                </div>
+
+                {{-- Confirmation modal --}}
+                <div class="modal fade" id="topicDeleteModal" tabindex="-1" aria-hidden="true" x-ref="modal">
+                    <div class="modal-dialog modal-dialog-centered modal-sm">
+                        <div class="modal-content">
+                            <div class="modal-header border-0 pb-0">
+                                <h6 class="modal-title fw-semibold">Delete Topic</h6>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <template x-if="checking">
+                                    <div class="text-center py-2 text-secondary">
+                                        <div class="spinner-border spinner-border-sm me-1" role="status"></div> Checking&hellip;
+                                    </div>
+                                </template>
+                                <template x-if="!checking && courseCount > 0">
+                                    <div>
+                                        <div class="alert alert-warning py-2 small mb-2">
+                                            <i class="bi bi-exclamation-triangle me-1"></i>
+                                            <strong x-text="'Warning:'"></strong>
+                                            This topic is assigned to <strong x-text="courseCount"></strong> <span x-text="courseCount === 1 ? 'course' : 'courses'"></span>. Those courses will keep their topic value but it will no longer appear in the topic list.
+                                        </div>
+                                        <p class="small text-secondary mb-0">Are you sure you want to delete <strong x-text="topicName"></strong>?</p>
+                                    </div>
+                                </template>
+                                <template x-if="!checking && courseCount === 0">
+                                    <p class="small text-secondary mb-0">Delete topic <strong x-text="topicName"></strong>? This cannot be undone.</p>
+                                </template>
+                            </div>
+                            <div class="modal-footer border-0 pt-0">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="button" class="btn btn-sm btn-danger" @click="doDelete()" :disabled="checking || deleting">
+                                    <template x-if="deleting"><span class="spinner-border spinner-border-sm" role="status"></span></template>
+                                    <template x-if="!deleting">Delete</template>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -508,3 +546,79 @@
     </main>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+function topicDeleter() {
+    return {
+        checking: false,
+        deleting: false,
+        courseCount: 0,
+        topicName: '',
+        _checkUrl: '',
+        _deleteUrl: '',
+        _topicId: null,
+        _modal: null,
+
+        async confirmDelete(id, name, checkUrl, deleteUrl) {
+            this.topicName = name;
+            this._checkUrl = checkUrl;
+            this._deleteUrl = deleteUrl;
+            this._topicId = id;
+            this.courseCount = 0;
+            this.checking = true;
+
+            if (!this._modal) {
+                this._modal = new bootstrap.Modal(this.$refs.modal);
+            }
+            this._modal.show();
+
+            try {
+                const res = await fetch(checkUrl, {
+                    credentials: 'same-origin',
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const json = await res.json();
+                this.courseCount = json.course_count;
+            } catch (e) {
+                console.error('Topic check failed:', e);
+                this.courseCount = 0;
+            } finally {
+                this.checking = false;
+            }
+        },
+
+        async doDelete() {
+            this.deleting = true;
+            try {
+                const res = await fetch(this._deleteUrl, {
+                    method: 'DELETE',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'X-Requested-With': 'XMLHttpRequest',
+                    }
+                });
+                if (res.ok) {
+                    this._modal.hide();
+                    const badge = document.getElementById('topic-badge-' + this._topicId);
+                    if (badge) badge.remove();
+
+                    // Update the total count badge
+                    const countBadge = badge?.closest('.card-body')?.querySelector('.badge.bg-primary-subtle');
+                    if (countBadge) {
+                        const remaining = document.querySelectorAll('[id^="topic-badge-"]').length;
+                        countBadge.textContent = remaining + ' total';
+                    }
+                }
+            } catch (e) {
+                console.error('Topic delete failed:', e);
+            } finally {
+                this.deleting = false;
+            }
+        }
+    };
+}
+</script>
+@endpush

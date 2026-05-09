@@ -32,6 +32,7 @@ class AdminComplianceReportController extends Controller
             $request->query('role'),
             $request->query('team'),
             $request->query('status'),
+            $request->query('location'),
         ));
     }
 
@@ -44,6 +45,7 @@ class AdminComplianceReportController extends Controller
             $request->query('role'),
             $request->query('team'),
             $request->query('status'),
+            $request->query('location'),
         );
         $filename = 'compliance-report-'.now()->format('Ymd-His').'.csv';
 
@@ -252,6 +254,7 @@ class AdminComplianceReportController extends Controller
             ],
             'availableTeams' => User::query()
                 ->with('preference')
+                ->forManagedScope(auth()->user())
                 ->get()
                 ->map(fn (User $user) => trim((string) $user->preference?->team))
                 ->filter()
@@ -260,6 +263,7 @@ class AdminComplianceReportController extends Controller
                 ->values(),
             'availableRoles' => User::query()
                 ->with('preference')
+                ->forManagedScope(auth()->user())
                 ->get()
                 ->map(fn (User $user) => strtolower((string) $user->preference?->role))
                 ->filter()
@@ -454,6 +458,7 @@ class AdminComplianceReportController extends Controller
         ?string $roleFilter = null,
         ?string $teamFilter = null,
         ?string $statusFilter = null,
+        ?string $locationFilter = null,
     ): array
     {
         Gate::authorize('admin-access');
@@ -470,10 +475,19 @@ class AdminComplianceReportController extends Controller
         if ($normalizedStatusFilter !== null && ! in_array($normalizedStatusFilter, ['assigned', 'in_progress', 'completed'], true)) {
             $normalizedStatusFilter = null;
         }
+        $normalizedLocationFilter = filled($locationFilter)
+            ? trim((string) $locationFilter)
+            : null;
 
         // --- Users ---
         $allUsers = User::query()
-            ->with('preference')
+            ->with('preference.location')
+            ->forManagedScope(auth()->user())
+            ->when($normalizedLocationFilter, function ($query) use ($normalizedLocationFilter) {
+                $query->whereHas('preference', function ($q) use ($normalizedLocationFilter) {
+                    $q->whereHas('location', fn ($lq) => $lq->where('slug', $normalizedLocationFilter));
+                });
+            })
             ->orderBy('name')
             ->get()
             ->filter(fn (User $user) => filled($user->preference?->role))
@@ -695,9 +709,11 @@ class AdminComplianceReportController extends Controller
                 'role' => $normalizedRoleFilter,
                 'team' => $normalizedTeamFilter,
                 'status' => $normalizedStatusFilter,
+                'location' => $normalizedLocationFilter,
             ],
             'availableTeams' => $availableTeams,
             'availableRoles' => $availableRoles,
+            'availableLocations' => \App\Models\Location::optionsWithAll(),
             'availableStatuses' => collect(['assigned', 'in_progress', 'completed']),
         ];
     }
@@ -718,6 +734,7 @@ class AdminComplianceReportController extends Controller
 
         $users = User::query()
             ->with('preference')
+            ->forManagedScope(auth()->user())
             ->orderBy('name')
             ->get()
             ->filter(fn (User $user) => filled($user->preference?->role))

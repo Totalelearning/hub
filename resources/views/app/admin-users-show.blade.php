@@ -48,7 +48,7 @@
                     || $managedUser->email_verified_at === null
                     || $managedUser->last_login_at === null
                     || optional($managedUser->last_login_at)->lt(now()->subDays(30));
-                $profileImage = $managedUser->is_admin
+                $profileImage = $managedUser->hasAdminAccess()
                     ? asset('vendor/learninguiux/img/modern-ai-image/user-6.jpg')
                     : asset('vendor/learninguiux/img/modern-ai-image/user-3.jpg');
             @endphp
@@ -78,7 +78,7 @@
                             <p class="text-secondary small mb-2">{{ $managedUser->email }}</p>
                             <div class="d-flex flex-wrap gap-1 mb-3">
                                 <span class="badge {{ $managedUser->email_verified_at ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger' }}">{{ $managedUser->email_verified_at ? 'Verified' : 'Unverified' }}</span>
-                                <span class="badge bg-primary-subtle text-primary">{{ $managedUser->is_admin ? 'Admin' : 'Learner' }}</span>
+                                <span class="badge bg-primary-subtle text-primary">{{ $managedUser->systemRoleLabel() }}</span>
                             </div>
                             <div class="small text-secondary"><i class="bi bi-calendar-event me-1"></i>Created {{ $managedUser->created_at?->format('Y-m-d H:i') ?? 'n/a' }}</div>
                             <div class="small text-secondary mt-1"><i class="bi bi-person-badge me-1"></i>User ID {{ $managedUser->id }}</div>
@@ -129,7 +129,10 @@
                                             <div class="text-uppercase fw-semibold text-secondary mb-2" style="font-size:.65rem;letter-spacing:.15em;">Account Summary</div>
                                             <div class="d-flex justify-content-between py-1 border-bottom"><span class="text-secondary">Updated</span><span>{{ $managedUser->updated_at?->format('Y-m-d H:i') ?? 'n/a' }}</span></div>
                                             <div class="d-flex justify-content-between py-1 border-bottom"><span class="text-secondary">Access</span><span class="fw-semibold {{ $managedUser->suspended_at ? 'text-warning' : 'text-success' }}">{{ $managedUser->suspended_at ? 'Suspended' : 'Active' }}</span></div>
-                                            <div class="d-flex justify-content-between py-1"><span class="text-secondary">Role</span><span>{{ $managedUser->is_admin ? 'Admin' : 'Learner' }}</span></div>
+                                            <div class="d-flex justify-content-between py-1"><span class="text-secondary">System Role</span><span>{{ $managedUser->systemRoleLabel() }}</span></div>
+                                            @if ($managedUser->managed_teams)
+                                                <div class="d-flex justify-content-between py-1 border-top"><span class="text-secondary">Teams</span><span>{{ implode(', ', $managedUser->managed_teams) }}</span></div>
+                                            @endif
                                         </div>
                                     </div>
                                 </div>
@@ -201,10 +204,12 @@
                 </div>
                 <div class="card-body">
                     <div class="d-flex flex-wrap gap-2">
+                        @if (auth()->user()?->isSiteAdmin())
                         <form method="POST" action="{{ route('app.admin.users.toggle-admin-access', ['user' => $managedUser->id]) }}">
                             @csrf @method('PATCH')
                             <button type="submit" class="btn btn-sm btn-outline-secondary">{{ $managedUser->is_admin ? 'Remove Admin Access' : 'Grant Admin Access' }}</button>
                         </form>
+                        @endif
                         <form method="POST" action="{{ route('app.admin.users.toggle-account-access', ['user' => $managedUser->id]) }}">
                             @csrf @method('PATCH')
                             <button type="submit" class="btn btn-sm {{ $managedUser->suspended_at ? 'btn-outline-success' : 'btn-outline-warning' }}">{{ $managedUser->suspended_at ? 'Restore Account' : 'Suspend Account' }}</button>

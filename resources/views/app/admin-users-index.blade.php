@@ -48,6 +48,7 @@
             @php
                 $summaryBaseFilters = [
                     'q' => $filters['q'],
+                    'location' => $filters['location'],
                     'team' => $filters['team'],
                     'training_compliance' => $filters['training_compliance'],
                     'sort' => $filters['sort'],
@@ -57,6 +58,7 @@
                 $summaryLink = fn (array $overrides = []) => route('app.admin.users.index', array_filter([
                     ...$summaryBaseFilters,
                     'role' => $filters['role'],
+                    'location' => $filters['location'],
                     'team' => $filters['team'],
                     'account_status' => $filters['account_status'],
                     'verification_status' => $filters['verification_status'],
@@ -70,6 +72,7 @@
                     'sort' => $filters['sort'],
                     'sort_dir' => $filters['sort_dir'],
                     'limit' => $filters['limit'],
+                    'location' => $filters['location'],
                     'team' => $filters['team'],
                     'training_compliance' => $filters['training_compliance'],
                     ...$overrides,
@@ -219,6 +222,14 @@
                                 </select>
                             </div>
                             <div class="col-12 col-md-6 col-xl-3">
+                                <label for="location" class="form-label">Location</label>
+                                <select id="location" name="location" class="form-select form-select-sm">
+                                    @foreach ($availableLocationFilters as $locationValue => $locationLabel)
+                                        <option value="{{ $locationValue }}" @selected($filters['location'] === $locationValue)>{{ $locationLabel }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-6 col-xl-3">
                                 <label for="team" class="form-label">Team</label>
                                 <select id="team" name="team" class="form-select form-select-sm">
                                     @foreach ($availableTeamFilters as $teamValue => $teamLabel)
@@ -306,7 +317,7 @@
                         </div>
                         <form id="bulk-user-action-form" method="POST" action="{{ route('app.admin.users.bulk-update') }}" class="d-flex flex-column flex-sm-row align-items-sm-end gap-2" data-user-bulk-form data-user-bulk-active-preset="{{ $selectedBulkPreset ?? '' }}">
                             @csrf
-                            @foreach (['q', 'role', 'team', 'account_status', 'verification_status', 'inactivity_status', 'attention_status', 'training_compliance', 'sort', 'sort_dir', 'limit'] as $filterKey)
+                            @foreach (['q', 'role', 'location', 'team', 'account_status', 'verification_status', 'inactivity_status', 'attention_status', 'training_compliance', 'sort', 'sort_dir', 'limit'] as $filterKey)
                                 <input type="hidden" name="{{ $filterKey }}" value="{{ $filters[$filterKey] }}">
                             @endforeach
                             <div>
@@ -327,7 +338,7 @@
                 {{-- Quick filters --}}
                 <div class="card-body border-bottom py-2">
                     <form method="GET" action="{{ route('app.admin.users.index') }}" class="row g-2 align-items-end">
-                        @foreach (['account_status', 'verification_status', 'inactivity_status', 'attention_status', 'training_compliance', 'sort', 'sort_dir', 'limit'] as $hk)
+                        @foreach (['location', 'account_status', 'verification_status', 'inactivity_status', 'attention_status', 'training_compliance', 'sort', 'sort_dir', 'limit'] as $hk)
                             <input type="hidden" name="{{ $hk }}" value="{{ $filters[$hk] }}">
                         @endforeach
                         <div class="col-auto">
@@ -335,6 +346,14 @@
                             <select id="qf_role" name="role" class="form-select form-select-sm" onchange="this.form.submit()">
                                 @foreach ($availableRoleFilters as $roleValue => $roleLabel)
                                     <option value="{{ $roleValue }}" @selected($filters['role'] === $roleValue)>{{ $roleLabel }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-auto">
+                            <label for="qf_location" class="form-label small mb-0">Location</label>
+                            <select id="qf_location" name="location" class="form-select form-select-sm" onchange="this.form.submit()">
+                                @foreach ($availableLocationFilters as $locationValue => $locationLabel)
+                                    <option value="{{ $locationValue }}" @selected($filters['location'] === $locationValue)>{{ $locationLabel }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -471,6 +490,7 @@
                                 <th style="width:2.5rem;"><input type="checkbox" data-user-bulk-toggle-visible class="form-check-input" aria-label="Select visible users"></th>
                                 <th><a href="{{ $sortUrl('name') }}" class="text-decoration-none">Student{{ $sortMarker('name') }}</a></th>
                                 <th><a href="{{ $sortUrl('email') }}" class="text-decoration-none">Contact{{ $sortMarker('email') }}</a></th>
+                                <th>Location</th>
                                 <th>Role</th>
                                 <th>Access</th>
                                 <th>Verification</th>
@@ -505,7 +525,7 @@
                                                     @endif
                                                 </div>
                                                 <div class="text-secondary" style="font-size:.75rem;">
-                                                    {{ $user->preference?->team ?? ($user->is_admin ? 'Admin workspace' : 'Learner workspace') }}
+                                                    {{ $user->preference?->team ?? ($user->hasAdminAccess() ? 'Admin workspace' : 'Learner workspace') }}
                                                     @if ($needsAttentionRow) | Needs Attention @endif
                                                 </div>
                                             </div>
@@ -516,8 +536,11 @@
                                         <div class="text-secondary" style="font-size:.75rem;">ID {{ $user->id }}</div>
                                     </td>
                                     <td>
-                                        <div class="fw-medium">{{ $user->preference?->role ?? ($user->is_admin ? 'Admin Staff' : 'Not assigned') }}</div>
-                                        <div class="text-secondary" style="font-size:.75rem;">{{ $user->is_admin ? 'Platform access' : ($user->preference?->team ?? 'No team assigned') }}</div>
+                                        <div class="fw-medium">{{ $user->preference?->location?->name ?? '—' }}</div>
+                                    </td>
+                                    <td>
+                                        <div class="fw-medium">{{ $user->preference?->role ?? ($user->hasAdminAccess() ? $user->systemRoleLabel() : 'Not assigned') }}</div>
+                                        <div class="text-secondary" style="font-size:.75rem;">{{ $user->hasAdminAccess() ? $user->systemRoleLabel() : ($user->preference?->team ?? 'No team assigned') }}</div>
                                     </td>
                                     <td>
                                         <span class="badge {{ $user->suspended_at ? 'bg-danger-subtle text-danger' : 'bg-success-subtle text-success' }}">{{ $user->suspended_at ? 'Suspended' : 'Active' }}</span>
@@ -548,7 +571,7 @@
                                     </td>
                                 </tr>
                             @empty
-                                <tr><td colspan="9" class="text-secondary text-center py-4">No users matched the current filters.</td></tr>
+                                <tr><td colspan="10" class="text-secondary text-center py-4">No users matched the current filters.</td></tr>
                             @endforelse
                         </tbody>
                     </table>

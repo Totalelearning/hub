@@ -5681,7 +5681,7 @@ XML);
                 'email' => 'created-user@example.com',
                 'role' => 'classroom_teacher',
                 'team' => 'teaching_staff',
-                'is_admin' => '1',
+                'system_role' => 'site_admin',
                 'password' => 'created-user-password',
                 'password_confirmation' => 'created-user-password',
             ]);
@@ -5738,8 +5738,8 @@ XML);
 
         $content = $response->streamedContent();
 
-        $this->assertStringContainsString('id,name,email,role,account_status,suspended_at,email_verified_at,last_login_at,created_at', $content);
-        $this->assertStringContainsString('"Export Admin",export-admin@example.com,admin,active,', $content);
+        $this->assertStringContainsString('id,name,email,system_role,location,team,staff_role,account_status,suspended_at,email_verified_at,last_login_at,created_at', $content);
+        $this->assertStringContainsString('"Export Admin",export-admin@example.com,"Site Administrator"', $content);
         $this->assertStringNotContainsString('export-learner@example.com', $content);
         $this->assertStringNotContainsString('suspended-export-learner@example.com', $content);
     }
@@ -5760,7 +5760,7 @@ XML);
                 'email' => 'updated@example.com',
                 'role' => 'business_manager',
                 'team' => 'administration_office_staff',
-                'is_admin' => '1',
+                'system_role' => 'site_admin',
                 'password' => 'new-secure-password',
                 'password_confirmation' => 'new-secure-password',
             ])
@@ -5895,6 +5895,7 @@ XML);
             ->patch('/app/admin/users/'.$admin->id, [
                 'name' => 'Self Admin Updated',
                 'email' => 'self-admin-updated@example.com',
+                'system_role' => 'learner',
             ])
             ->assertRedirect('/app/admin/users/'.$admin->id.'/edit');
 
@@ -5903,6 +5904,7 @@ XML);
         $this->assertSame('Self Admin Updated', $admin->name);
         $this->assertSame('self-admin-updated@example.com', $admin->email);
         $this->assertTrue($admin->is_admin);
+        $this->assertSame('site_admin', $admin->system_role);
 
         $this->actingAs($admin)
             ->get('/app/admin/users/'.$admin->id.'/edit')

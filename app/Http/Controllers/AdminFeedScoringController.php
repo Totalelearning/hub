@@ -15,7 +15,7 @@ class AdminFeedScoringController extends Controller
 {
     public function edit(FeedScoringSettingsService $settings): View
     {
-        Gate::authorize('admin-access');
+        Gate::authorize('admin-write');
 
         $weights = $settings->allWeights();
         $defaults = $settings->defaults();
@@ -80,7 +80,7 @@ class AdminFeedScoringController extends Controller
 
     public function update(Request $request, FeedScoringSettingsService $settings): RedirectResponse
     {
-        Gate::authorize('admin-access');
+        Gate::authorize('admin-write');
 
         $defaults = $settings->defaults();
         $rules = ['weights' => ['required', 'array']];
@@ -115,7 +115,7 @@ class AdminFeedScoringController extends Controller
 
     public function reset(FeedScoringSettingsService $settings): RedirectResponse
     {
-        Gate::authorize('admin-access');
+        Gate::authorize('admin-write');
 
         $before = $settings->allWeights();
         $settings->resetToDefaults();
@@ -130,7 +130,7 @@ class AdminFeedScoringController extends Controller
 
     public function applyPreset(Request $request, FeedScoringSettingsService $settings): RedirectResponse
     {
-        Gate::authorize('admin-access');
+        Gate::authorize('admin-write');
 
         $validated = $request->validate([
             'preset' => ['required', 'string', 'max:100'],

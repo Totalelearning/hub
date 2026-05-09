@@ -53,11 +53,13 @@
                         <a href="{{ route('app.admin.compliance.learners', array_filter([
                             'role' => $filters['role'] ?? null,
                             'team' => $filters['team'] ?? null,
+                            'location' => $filters['location'] ?? null,
                             'status' => $filters['status'] ?? null,
                         ])) }}" class="btn btn-outline-theme">Learner Matrix</a>
                         <a href="{{ route('app.admin.compliance.export', array_filter([
                             'role' => $filters['role'] ?? null,
                             'team' => $filters['team'] ?? null,
+                            'location' => $filters['location'] ?? null,
                             'status' => $filters['status'] ?? null,
                         ])) }}" class="btn btn-theme">Export CSV</a>
                     </div>
@@ -66,6 +68,7 @@
 
             @php
                 $activeFilterMap = collect([
+                    'Location' => $filters['location'] ?? null,
                     'Role' => $filters['role'] ?? null,
                     'Team' => $filters['team'] ?? null,
                     'Status' => $filters['status'] ?? null,
@@ -120,11 +123,13 @@
                             <a href="{{ route('app.admin.compliance.export', array_filter([
                                 'role' => $filters['role'] ?? null,
                                 'team' => $filters['team'] ?? null,
+                                'location' => $filters['location'] ?? null,
                                 'status' => $filters['status'] ?? null,
                             ])) }}" class="btn btn-outline-theme btn-sm"><i class="bi bi-box-arrow-up-right me-1"></i> Export</a>
                             <a href="{{ route('app.admin.compliance.learners', array_filter([
                                 'role' => $filters['role'] ?? null,
                                 'team' => $filters['team'] ?? null,
+                                'location' => $filters['location'] ?? null,
                                 'status' => $filters['status'] ?? null,
                             ])) }}" class="btn btn-outline-theme btn-sm"><i class="bi bi-people me-1"></i> Learner Results</a>
                         </div>
@@ -137,6 +142,14 @@
                                     <option value="">All roles</option>
                                     @foreach ($availableRoles as $role)
                                         <option value="{{ $role }}" @selected(($filters['role'] ?? null) === $role)>{{ $role }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-6 col-xl">
+                                <label for="location" class="form-label small fw-semibold text-secondary">Location</label>
+                                <select id="location" name="location" class="form-select form-select-sm">
+                                    @foreach (($availableLocations ?? ['all' => 'All']) as $locValue => $locLabel)
+                                        <option value="{{ $locValue === 'all' ? '' : $locValue }}" @selected(($filters['location'] ?? null) === ($locValue === 'all' ? null : $locValue))>{{ $locLabel }}</option>
                                     @endforeach
                                 </select>
                             </div>
