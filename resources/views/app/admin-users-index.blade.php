@@ -16,20 +16,14 @@
             {{-- Hero --}}
             <div class="mb-4 admin-feed-hero">
                 <div class="row align-items-center g-0 p-4 p-lg-5">
-                    <div class="col-12 col-lg-8 admin-feed-hero-copy mb-3 mb-lg-0">
+                    <div class="col-12 col-lg-8 admin-feed-hero-copy">
                         <div class="text-uppercase fw-semibold text-primary mb-2" style="letter-spacing:.3em;font-size:.72rem;">User Management</div>
                         <h1 class="fs-3 fw-semibold mb-2">All Students</h1>
-                        <nav aria-label="breadcrumb">
-                            <ol class="breadcrumb small mb-2">
-                                <li class="breadcrumb-item"><a href="{{ route('app.admin.assignments') }}">Dashboard</a></li>
-                                <li class="breadcrumb-item active" aria-current="page">All Students</li>
-                            </ol>
-                        </nav>
-                        <p class="text-secondary mb-0">Manage school staff accounts, filter by team and role, and move quickly from directory search into edit and audit flows.</p>
-                    </div>
-                    <div class="col-12 col-lg-4 d-flex flex-wrap gap-2 justify-content-lg-end">
-                        <a href="{{ route('app.admin.users.create') }}" class="btn btn-theme">+ Add Student</a>
-                        <a href="{{ route('app.admin.users.export', array_filter($filters, fn ($value) => $value !== '' && $value !== 'all')) }}" class="btn btn-outline-theme">Export Directory</a>
+                        <p class="text-secondary mb-3">Manage school staff accounts, filter by team and role, and move quickly from directory search into edit and audit flows.</p>
+                        <div class="d-flex flex-wrap gap-2">
+                            <a href="{{ route('app.admin.users.export', array_filter($filters, fn ($value) => $value !== '' && $value !== 'all')) }}" class="btn btn-outline-theme btn-sm"><i class="bi bi-download me-1"></i>Export Directory</a>
+                            <a href="{{ route('app.admin.users.create') }}" class="btn btn-theme btn-sm"><i class="bi bi-plus me-1"></i>Add Student</a>
+                        </div>
                     </div>
                 </div>
             </div>

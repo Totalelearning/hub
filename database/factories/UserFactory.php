@@ -51,6 +51,14 @@ class UserFactory extends Factory
         ]);
     }
 
+    public function trustee(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_admin' => true,
+            'system_role' => 'trustee',
+        ]);
+    }
+
     public function sltManager(array $teams = []): static
     {
         return $this->state(fn (array $attributes) => [
@@ -66,6 +74,14 @@ class UserFactory extends Factory
             'is_admin' => true,
             'system_role' => 'manager',
             'managed_teams' => $teams,
+        ]);
+    }
+
+    public function parent(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_admin' => false,
+            'system_role' => 'parent',
         ]);
     }
 }

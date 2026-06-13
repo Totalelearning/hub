@@ -21,6 +21,13 @@
       "runtimeArgs": ["compose", "up", "pgsql"],
       "port": 5432,
       "autoPort": false
+    },
+    {
+      "name": "Kimi Site (New school)",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", ".claude\\start-kimi-site.cmd"],
+      "port": 3000,
+      "autoPort": false
     }
   ]
 }

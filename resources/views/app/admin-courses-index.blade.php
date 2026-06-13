@@ -16,14 +16,14 @@
             {{-- Hero --}}
             <div class="mb-4 admin-feed-hero">
                 <div class="row align-items-center g-0 p-4 p-lg-5">
-                    <div class="col-12 col-lg-8 admin-feed-hero-copy mb-3 mb-lg-0">
+                    <div class="col-12 col-lg-8 admin-feed-hero-copy">
                         <div class="text-uppercase fw-semibold text-primary mb-2" style="letter-spacing:.3em;font-size:.72rem;">Course Builder</div>
                         <h1 class="fs-3 fw-semibold mb-2">Courses</h1>
-                        <p class="text-secondary mb-0">Group modules into short courses. A typical course is ~15 minutes, made up of 2&ndash;3 minute modules.</p>
-                    </div>
-                    <div class="col-12 col-lg-4 d-flex flex-wrap gap-2 justify-content-lg-end">
-                        <a href="{{ route('app.admin.modules.index') }}" class="btn btn-outline-theme">Manage Modules</a>
-                        <a href="{{ route('app.admin.courses.create') }}" class="btn btn-theme">Create Course</a>
+                        <p class="text-secondary mb-3">Group modules into short courses. A typical course is ~15 minutes, made up of 2&ndash;3 minute modules.</p>
+                        <div class="d-flex flex-wrap gap-2">
+                            <a href="{{ route('app.admin.modules.index') }}" class="btn btn-outline-theme btn-sm">Manage Modules</a>
+                            <a href="{{ route('app.admin.courses.create') }}" class="btn btn-theme btn-sm"><i class="bi bi-plus me-1"></i>Create Course</a>
+                        </div>
                     </div>
                 </div>
             </div>

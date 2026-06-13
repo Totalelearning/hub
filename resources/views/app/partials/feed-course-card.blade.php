@@ -6,16 +6,23 @@
     $durationLabel = $course->estimated_minutes ? $course->estimated_minutes . ' min' : null;
     $progressPercent = $course->course_progress_percent ?? 0;
     $completedModules = $course->course_completed_modules ?? 0;
+    $enrolmentStatus = $course->enrolment_status ?? null;
+    $isCompleted = $enrolmentStatus === 'completed' || $progressPercent === 100;
 @endphp
 
 <div class="col-12 col-md-6 col-xl-3 mb-4">
-    <div class="card border-0 h-100 overflow-hidden" style="border-radius:16px; box-shadow: 0 8px 30px rgba(43, 82, 138, 0.10); background: #fff;">
+    <div class="card border-0 h-100 overflow-hidden{{ $isCompleted ? ' opacity-75' : '' }}" style="border-radius:16px; box-shadow: 0 8px 30px rgba(43, 82, 138, 0.10); background: #fff;">
 
         {{-- Title & topic --}}
         <div class="px-3 pt-3 pb-2">
-            <a href="{{ route('app.courses.show', $course) }}" class="text-decoration-none">
-                <h6 class="fw-bold text-primary mb-1" style="min-height:2.6em;">{{ \Illuminate\Support\Str::limit($course->title, 42) }}</h6>
-            </a>
+            <div class="d-flex justify-content-between align-items-start gap-2">
+                <a href="{{ route('app.courses.show', $course) }}" class="text-decoration-none">
+                    <h6 class="fw-bold text-primary mb-1" style="min-height:2.6em;">{{ \Illuminate\Support\Str::limit($course->title, 42) }}</h6>
+                </a>
+                @if ($isCompleted)
+                    <span class="badge bg-success-subtle text-success flex-shrink-0">Completed</span>
+                @endif
+            </div>
             <p class="small text-secondary mb-0">{{ $topicLabel }}</p>
         </div>
 

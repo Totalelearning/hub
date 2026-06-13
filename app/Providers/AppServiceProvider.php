@@ -50,8 +50,22 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::policy(ModuleProgress::class, ModuleProgressPolicy::class);
         Gate::policy(UserPreference::class, UserPreferencePolicy::class);
+        // Coarse: any admin role (site_admin, trustee, slt_manager, manager)
         Gate::define('admin-access', fn ($user) => $user->hasAdminAccess());
+
+        // Write: site_admin only (create/edit/delete system resources)
         Gate::define('admin-write', fn ($user) => $user->isSiteAdmin());
+
+        // Trustee+: unrestricted cross-location/cross-team view (site_admin, trustee)
+        Gate::define('trustee-view', fn ($user) => $user->hasUnrestrictedView());
+
+        // Admin read: view users, reports without write (site_admin, trustee, slt_manager)
+        Gate::define('admin-read', fn ($user) => in_array($user->system_role, ['site_admin', 'trustee', 'slt_manager'], true));
+
+        // Team management: assign users to teams, manage team assignments (site_admin, slt_manager)
         Gate::define('manage-teams', fn ($user) => $user->canManageTeamAssignments());
+
+        // Assignment management: create/edit assignment rules and waivers (site_admin, slt_manager)
+        Gate::define('manage-assignments', fn ($user) => in_array($user->system_role, ['site_admin', 'slt_manager'], true));
     }
 }

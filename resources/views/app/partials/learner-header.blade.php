@@ -51,11 +51,7 @@
                     <i data-feather="search"></i>
                 </button>
 
-                {{-- Dark mode toggle --}}
-                <button class="btn btn-link btn-square btnsunmoon btn-link-header" id="btn-layout-modes-dark-page">
-                    <i class="sun mx-auto" data-feather="sun"></i>
-                    <i class="moon mx-auto" data-feather="moon"></i>
-                </button>
+                {{-- Dark mode toggle (hidden) --}}
 
                 {{-- Reminders / notifications --}}
                 @php $unreadNotificationCount = auth()->user()?->unreadNotifications()->count() ?? 0; @endphp

@@ -28,6 +28,7 @@ use App\Http\Controllers\AppModuleController;
 use App\Http\Controllers\AppScormController;
 use App\Http\Controllers\AppReminderController;
 use App\Http\Controllers\AppReinforcementController;
+use App\Http\Controllers\ParentDashboardController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -36,6 +37,10 @@ Route::get('/', function () {
 });
 
 Route::get('/dashboard', function () {
+    if (auth()->user()->isParent()) {
+        return redirect()->route('app.parent.dashboard');
+    }
+
     return \Illuminate\Support\Facades\Gate::allows('admin-access')
         ? redirect()->route('app.admin.assignments')
         : redirect()->route('app.feed');
@@ -53,6 +58,23 @@ Route::middleware('auth')->group(function () {
 |--------------------------------------------------------------------------
 | Restored after Breeze install overwrote routes/web.php
 */
+/*
+|--------------------------------------------------------------------------
+| Parent portal routes
+|--------------------------------------------------------------------------
+*/
+Route::prefix('app/parent')->middleware(['auth', \App\Http\Middleware\EnsureUserIsParent::class])->group(function () {
+    Route::get('/', [ParentDashboardController::class, 'index'])->name('app.parent.dashboard');
+    Route::get('courses/{course}', [AppCourseController::class, 'show'])->name('app.parent.courses.show');
+    Route::get('modules/{module}', [AppModuleController::class, 'show'])->name('app.parent.modules.show');
+    Route::get('modules/{module}/scorm', [AppScormController::class, 'launch'])->name('app.parent.modules.scorm.launch');
+    Route::get('modules/{module}/scorm/content/{path?}', [AppScormController::class, 'asset'])
+        ->where('path', '.*')
+        ->name('app.parent.modules.scorm.asset');
+    Route::post('modules/{module}/scorm/runtime', [AppScormController::class, 'runtime'])
+        ->name('app.parent.modules.scorm.runtime');
+});
+
 Route::prefix('app')->middleware('auth')->group(function () {
     Route::get('admin/assignments', AdminAssignmentDashboardController::class)
         ->name('app.admin.assignments');
@@ -253,6 +275,17 @@ Route::prefix('app')->middleware('auth')->group(function () {
         ->name('app.admin.course-analytics.attempts-json');
     Route::get('admin/course-analytics/gaps', [AdminCourseAnalyticsController::class, 'gapsJson'])
         ->name('app.admin.course-analytics.gaps');
+    Route::get('admin/course-analytics/summary-json', [AdminCourseAnalyticsController::class, 'summaryJson'])
+        ->name('app.admin.course-analytics.summary-json');
+    Route::get('admin/course-analytics/location-comparison-json', [AdminCourseAnalyticsController::class, 'locationComparisonJson'])
+        ->middleware('can:trustee-view')
+        ->name('app.admin.course-analytics.location-comparison-json');
+    Route::get('admin/course-analytics/team-comparison-json', [AdminCourseAnalyticsController::class, 'teamComparisonJson'])
+        ->middleware('can:trustee-view')
+        ->name('app.admin.course-analytics.team-comparison-json');
+    Route::get('admin/course-analytics/role-comparison-json', [AdminCourseAnalyticsController::class, 'roleComparisonJson'])
+        ->middleware('can:trustee-view')
+        ->name('app.admin.course-analytics.role-comparison-json');
     Route::get('admin/course-analytics/attempts/{attempt}', [AdminCourseAnalyticsController::class, 'showAttempt'])
         ->whereNumber('attempt')
         ->name('app.admin.course-analytics.attempt');

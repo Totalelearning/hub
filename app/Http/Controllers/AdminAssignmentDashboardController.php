@@ -961,6 +961,49 @@ class AdminAssignmentDashboardController extends Controller
             ->groupBy('role')
             ->map(fn (Collection $rules) => $rules->values());
 
+        // --- Analytics snapshot (matches analytics page — all users in scope) ---
+        $teamScope = User::managedScopeUserIds(auth()->user());
+        $analyticsPivot = DB::table('course_user')
+            ->join('courses', 'courses.id', '=', 'course_user.course_id')
+            ->where('courses.status', 'published')
+            ->when($teamScope !== null, fn ($q) => $q->whereIn('course_user.user_id', $teamScope))
+            ->selectRaw("count(*) as total_assigned")
+            ->selectRaw("count(case when course_user.status = 'completed' then 1 end) as total_completed")
+            ->selectRaw("count(case when course_user.status = 'in_progress' then 1 end) as total_in_progress")
+            ->selectRaw("count(case when course_user.status = 'assigned' then 1 end) as total_not_started")
+            ->selectRaw("count(distinct course_user.user_id) as total_learners")
+            ->first();
+        $analyticsCompletionRate = ($analyticsPivot->total_assigned ?? 0) > 0
+            ? (int) round(($analyticsPivot->total_completed / $analyticsPivot->total_assigned) * 100)
+            : 0;
+
+        // --- Location completion ranking (for trustee dashboard) ---
+        $locationCompletionRows = [];
+        if (auth()->user()->hasUnrestrictedView()) {
+            $locationCompletionRows = DB::table('course_user')
+                ->join('user_preferences', 'user_preferences.user_id', '=', 'course_user.user_id')
+                ->join('locations', 'locations.id', '=', 'user_preferences.location_id')
+                ->join('courses', 'courses.id', '=', 'course_user.course_id')
+                ->where('courses.status', 'published')
+                ->where('locations.is_active', true)
+                ->select(
+                    'locations.name as location',
+                    DB::raw("count(*) as enrolled"),
+                    DB::raw("count(case when course_user.status = 'completed' then 1 end) as completed"),
+                )
+                ->groupBy('locations.name')
+                ->having(DB::raw('count(*)'), '>', 0)
+                ->orderByRaw("round(count(case when course_user.status = 'completed' then 1 end)::numeric / count(*) * 100) asc")
+                ->get()
+                ->map(fn ($row) => [
+                    'location' => $row->location,
+                    'enrolled' => $row->enrolled,
+                    'completed' => $row->completed,
+                    'completion_rate' => (int) round($row->completed / $row->enrolled * 100),
+                ])
+                ->all();
+        }
+
         // --- Course completion data (from course_user pivot) ---
         $users = User::query()
             ->with('preference')
@@ -1429,6 +1472,13 @@ class AdminAssignmentDashboardController extends Controller
                 'last_tuning_at' => $latestTuningEvent?->created_at,
                 'last_tuning_action' => $latestTuningEvent?->action,
                 'last_tuning_actor' => $latestTuningEvent?->actor?->name,
+                'analytics_total_assigned' => (int) ($analyticsPivot->total_assigned ?? 0),
+                'analytics_total_completed' => (int) ($analyticsPivot->total_completed ?? 0),
+                'analytics_total_in_progress' => (int) ($analyticsPivot->total_in_progress ?? 0),
+                'analytics_total_not_started' => (int) ($analyticsPivot->total_not_started ?? 0),
+                'analytics_total_learners' => (int) ($analyticsPivot->total_learners ?? 0),
+                'analytics_completion_rate' => $analyticsCompletionRate,
+                'location_completion_rows' => $locationCompletionRows,
                 'course_completion_total_assignments' => $courseCompletionTotalAssignments,
                 'course_completion_completed_count' => $courseCompletionCompletedCount,
                 'course_completion_in_progress_count' => $courseCompletionInProgressCount,

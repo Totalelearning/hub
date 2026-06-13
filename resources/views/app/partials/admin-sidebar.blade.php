@@ -8,12 +8,10 @@
         ] : []),
         ['label' => 'Analytics', 'route' => route('app.admin.course-analytics'), 'active' => request()->routeIs('app.admin.course-analytics*'), 'icon' => 'bi bi-bar-chart-line'],
         ['label' => 'Gamification', 'route' => route('app.admin.gamification'), 'active' => request()->routeIs('app.admin.gamification*'), 'icon' => 'bi bi-trophy'],
-        ['label' => 'Locations', 'route' => route('app.admin.locations.index'), 'active' => request()->routeIs('app.admin.locations.*'), 'icon' => 'bi bi-geo-alt'],
-        ['label' => 'Compliance', 'route' => route('app.admin.compliance'), 'active' => request()->routeIs('app.admin.compliance*'), 'icon' => 'bi bi-shield-check'],
+        ['label' => auth()->user()?->hasUnrestrictedView() ? 'Locations' : 'Roles & Teams', 'route' => route('app.admin.roles-teams.index'), 'active' => request()->routeIs('app.admin.roles-teams.*') || request()->routeIs('app.admin.locations.*'), 'icon' => auth()->user()?->hasUnrestrictedView() ? 'bi bi-geo-alt' : 'bi bi-diagram-3'],
         ['label' => 'Users', 'route' => route('app.admin.users.index'), 'active' => request()->routeIs('app.admin.users.*'), 'icon' => 'bi bi-people'],
         ...($isSiteAdmin ? [
             ['label' => 'Paths', 'route' => route('app.admin.paths.index'), 'active' => request()->routeIs('app.admin.paths.*'), 'icon' => 'bi bi-signpost-split'],
-            ['label' => 'Roles, Teams & Locations', 'route' => route('app.admin.roles-teams.index'), 'active' => request()->routeIs('app.admin.roles-teams.*'), 'icon' => 'bi bi-diagram-3'],
             ['label' => 'Settings', 'route' => route('app.admin.reminder-settings.edit'), 'active' => request()->routeIs('app.admin.reminder-settings.*') || request()->routeIs('app.admin.scoring.*') || request()->routeIs('app.admin.ranking.*') || request()->routeIs('app.assignment-rules'), 'icon' => 'bi bi-sliders'],
         ] : []),
     ];

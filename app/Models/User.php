@@ -85,14 +85,30 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->system_role === 'learner' || $this->system_role === null;
     }
 
+    public function isParent(): bool
+    {
+        return $this->system_role === 'parent';
+    }
+
+    public function isTrustee(): bool
+    {
+        return $this->system_role === 'trustee';
+    }
+
+    /** Trustee and site admin both have unrestricted read access across all locations/teams. */
+    public function hasUnrestrictedView(): bool
+    {
+        return in_array($this->system_role, ['site_admin', 'trustee'], true);
+    }
+
     public function hasAdminAccess(): bool
     {
-        return in_array($this->system_role, ['site_admin', 'slt_manager', 'manager'], true);
+        return in_array($this->system_role, ['site_admin', 'trustee', 'slt_manager', 'manager'], true);
     }
 
     public function canManageTeam(?string $teamName): bool
     {
-        if ($this->isSiteAdmin()) {
+        if ($this->hasUnrestrictedView()) {
             return true;
         }
 
@@ -110,7 +126,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function canManageLocation(?string $locationSlugOrName): bool
     {
-        if ($this->isSiteAdmin()) {
+        if ($this->hasUnrestrictedView()) {
             return true;
         }
 
@@ -136,8 +152,10 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return match ($this->system_role) {
             'site_admin' => 'Site Administrator',
+            'trustee' => 'Trustee',
             'slt_manager' => 'SLT Manager',
             'manager' => 'Manager',
+            'parent' => 'Parent',
             default => 'Learner',
         };
     }
@@ -146,11 +164,11 @@ class User extends Authenticatable implements MustVerifyEmail
 
     /**
      * Scope to users whose team falls within the given admin's managed teams.
-     * Site admins see all users (no filter applied).
+     * Site admins and trustees see all users (no filter applied).
      */
     public function scopeForManagedTeams(Builder $query, self $admin): Builder
     {
-        if ($admin->isSiteAdmin()) {
+        if ($admin->hasUnrestrictedView()) {
             return $query;
         }
 
@@ -171,7 +189,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public static function managedTeamUserIds(self $admin): ?array
     {
-        if ($admin->isSiteAdmin()) {
+        if ($admin->hasUnrestrictedView()) {
             return null;
         }
 
@@ -198,7 +216,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function scopeForManagedLocations(Builder $query, self $admin): Builder
     {
-        if ($admin->isSiteAdmin()) {
+        if ($admin->hasUnrestrictedView()) {
             return $query;
         }
 
@@ -227,7 +245,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public static function managedLocationUserIds(self $admin): ?array
     {
-        if ($admin->isSiteAdmin()) {
+        if ($admin->hasUnrestrictedView()) {
             return null;
         }
 

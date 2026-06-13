@@ -77,9 +77,9 @@
             @if (($assignedCourses ?? collect())->isNotEmpty())
                 <div class="card learner-panel-card mb-4">
                     <div class="card-body p-4">
-                        <span class="learner-section-title d-inline-block mb-2">Your Courses</span>
-                        <h5 class="mb-1">Assigned courses</h5>
-                        <p class="text-secondary mb-3">Courses assigned to you based on your role.</p>
+                        <span class="learner-section-title d-inline-block mb-2">{{ $courseSectionLabel ?? 'Your Courses' }}</span>
+                        <h5 class="mb-1">{{ $courseSectionTitle ?? 'Assigned courses' }}</h5>
+                        <p class="text-secondary mb-3">{{ $courseSectionSubtitle ?? 'Courses assigned to you based on your role.' }}</p>
                         <div class="row">
                             @foreach ($assignedCourses as $course)
                                 @include('app.partials.feed-course-card', ['course' => $course])
@@ -105,7 +105,7 @@
                         </div>
                     </div>
                 </div>
-            @else
+            @elseif ($catalogueEmptyMessage ?? null)
                 <div class="card learner-panel-card">
                     <div class="card-body p-4 text-secondary">
                         {{ $catalogueEmptyMessage }}

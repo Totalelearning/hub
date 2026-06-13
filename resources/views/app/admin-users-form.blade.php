@@ -4,6 +4,13 @@
 @section('body_class', 'main-bg main-bg-opac sharpcornerui adminuiux-header-standard adminuiux-sidebar-iconic theme-blue adminuiux-header-transparent adminuiux-sidebar-fill-white bg-gradient-1 scrollup')
 @section('body_attributes', 'data-theme="theme-blue" data-sidebarfill="adminuiux-sidebar-fill-white" data-sidebarlayout="adminuiux-sidebar-iconic" data-headerlayout="adminuiux-header-standard" data-bggradient="bg-gradient-1" data-headerfill="adminuiux-header-transparent"')
 
+@push('styles')
+<style>
+    .gam-stat-card { border-radius: 16px; border: 1px solid rgba(226, 232, 240, 0.9); background: rgba(248, 250, 252, 0.95); padding: 1.25rem; }
+    .form-card { border: 0; border-radius: 20px; box-shadow: 0 12px 32px rgba(43, 82, 138, 0.1); background: rgba(255, 255, 255, 0.97); }
+</style>
+@endpush
+
 @section('content')
 @include('app.partials.admin-header')
 
@@ -16,18 +23,17 @@
             {{-- Hero --}}
             <div class="mb-4 admin-feed-hero">
                 <div class="row align-items-center g-0 p-4 p-lg-5">
-                    <div class="col-12 col-lg-7 admin-feed-hero-copy mb-3 mb-lg-0">
-                        <div class="text-uppercase fw-semibold text-primary mb-2" style="letter-spacing:.3em;font-size:.72rem;">User Workspace</div>
+                    <div class="col-12 col-lg-8 admin-feed-hero-copy">
+                        <div class="text-uppercase fw-semibold text-primary mb-2" style="letter-spacing:.3em;font-size:.72rem;">User Management</div>
                         <h1 class="fs-3 fw-semibold mb-2">{{ $pageTitle }}</h1>
-                        <p class="text-secondary mb-0">{{ $pageDescription }}</p>
-                    </div>
-                    <div class="col-12 col-lg-5 d-flex flex-wrap gap-2 justify-content-lg-end">
-                        @if ($managedUser->exists)
-                            <a href="{{ route('app.admin.users.show', ['user' => $managedUser->id]) }}" class="btn btn-outline-theme btn-sm">View User</a>
-                            <a href="{{ route('app.admin.assignments.user', ['user' => $managedUser->id]) }}" class="btn btn-outline-theme btn-sm">Learner Detail</a>
-                            <a href="{{ route('app.admin.assignments.audit', ['target' => $managedUser->id]) }}" class="btn btn-outline-theme btn-sm">Open Audit</a>
-                        @endif
-                        <a href="{{ route('app.admin.users.index') }}" class="btn btn-outline-theme btn-sm">Back to Users</a>
+                        <p class="text-secondary mb-3">{{ $pageDescription }}</p>
+                        <div class="d-flex flex-wrap gap-2">
+                            @if ($managedUser->exists)
+                                <a href="{{ route('app.admin.users.show', ['user' => $managedUser->id]) }}" class="btn btn-outline-theme btn-sm"><i class="bi bi-person me-1"></i>View User</a>
+                                <a href="{{ route('app.admin.assignments.user', ['user' => $managedUser->id]) }}" class="btn btn-outline-theme btn-sm"><i class="bi bi-list-check me-1"></i>Learner Detail</a>
+                            @endif
+                            <a href="{{ route('app.admin.users.index') }}" class="btn btn-outline-theme btn-sm"><i class="bi bi-arrow-left me-1"></i>All Users</a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -37,61 +43,39 @@
                 <div class="alert alert-success mb-4">{{ session('status') }}</div>
             @endif
 
-            {{-- KPI cards --}}
-            <div class="row g-4 mb-4">
-                <div class="col-12 col-md-6 col-xl-3">
-                    <div class="card adminuiux-card shadow-sm h-100 admin-feed-kpi">
-                        <div class="card-body d-flex flex-column align-items-center text-center p-4">
-                            <div class="admin-feed-kpi-icon mb-3"><i class="bi bi-person-badge fs-3"></i></div>
-                            <div class="admin-feed-kpi-stat">{{ $managedUser->id ?: 'Pending' }}</div>
-                            <div class="fw-semibold mt-1">User ID</div>
-                            <div class="small text-secondary mt-auto pt-2">Identity</div>
-                        </div>
+            {{-- KPI cards (edit only) --}}
+            @if ($managedUser->exists)
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-xl-3">
+                    <div class="gam-stat-card">
+                        <div class="small text-secondary">Created</div>
+                        <div class="fs-5 fw-bold mt-1">{{ $managedUser->created_at?->format('d M Y') ?? '—' }}</div>
                     </div>
                 </div>
-                <div class="col-12 col-md-6 col-xl-3">
-                    <div class="card adminuiux-card shadow-sm h-100 admin-feed-kpi">
-                        <div class="card-body d-flex flex-column align-items-center text-center p-4">
-                            <div class="admin-feed-kpi-icon mb-3"><i class="bi bi-calendar-event fs-3"></i></div>
-                            <div class="admin-feed-kpi-stat" style="font-size:1.1rem;">{{ $managedUser->created_at?->format('Y-m-d H:i') ?? 'Pending' }}</div>
-                            <div class="fw-semibold mt-1">Created</div>
-                            <div class="small text-secondary mt-auto pt-2">Lifecycle</div>
-                        </div>
+                <div class="col-6 col-xl-3">
+                    <div class="gam-stat-card">
+                        <div class="small text-secondary">Email Verified</div>
+                        <div class="fs-5 fw-bold mt-1 {{ $managedUser->email_verified_at ? 'text-success' : 'text-warning' }}">{{ $managedUser->email_verified_at ? $managedUser->email_verified_at->format('d M Y') : 'Not verified' }}</div>
                     </div>
                 </div>
-                <div class="col-12 col-md-6 col-xl-3">
-                    <div class="card adminuiux-card shadow-sm h-100 admin-feed-kpi">
-                        <div class="card-body d-flex flex-column align-items-center text-center p-4">
-                            <div class="admin-feed-kpi-icon mb-3" style="color:{{ $managedUser->exists && $managedUser->email_verified_at ? '#0f766e' : '#b45309' }};background:{{ $managedUser->exists && $managedUser->email_verified_at ? 'linear-gradient(135deg, rgba(213, 250, 229, 0.96), rgba(220, 252, 231, 0.96))' : 'linear-gradient(135deg, rgba(254, 243, 199, 0.98), rgba(255, 237, 213, 0.98))' }};">
-                                <i class="bi {{ $managedUser->exists && $managedUser->email_verified_at ? 'bi-envelope-check' : 'bi-envelope' }} fs-3"></i>
-                            </div>
-                            <div class="admin-feed-kpi-stat" style="font-size:1.1rem;">{{ $managedUser->exists ? ($managedUser->email_verified_at?->format('Y-m-d H:i') ?? 'Not verified') : 'Pending' }}</div>
-                            <div class="fw-semibold mt-1">Email Verified</div>
-                            <div class="small text-secondary mt-auto pt-2">Readiness</div>
-                        </div>
+                <div class="col-6 col-xl-3">
+                    <div class="gam-stat-card">
+                        <div class="small text-secondary">Status</div>
+                        <div class="fs-5 fw-bold mt-1 {{ $managedUser->suspended_at ? 'text-danger' : 'text-success' }}">{{ $managedUser->suspended_at ? 'Suspended' : 'Active' }}</div>
                     </div>
                 </div>
-                <div class="col-12 col-md-6 col-xl-3">
-                    <div class="card adminuiux-card shadow-sm h-100 admin-feed-kpi">
-                        <div class="card-body d-flex flex-column align-items-center text-center p-4">
-                            <div class="admin-feed-kpi-icon mb-3" style="color:{{ $managedUser->exists && $managedUser->suspended_at ? '#b45309' : '#0f766e' }};background:{{ $managedUser->exists && $managedUser->suspended_at ? 'linear-gradient(135deg, rgba(254, 243, 199, 0.98), rgba(255, 237, 213, 0.98))' : 'linear-gradient(135deg, rgba(213, 250, 229, 0.96), rgba(220, 252, 231, 0.96))' }};">
-                                <i class="bi {{ $managedUser->exists && $managedUser->suspended_at ? 'bi-pause-circle' : 'bi-check-circle' }} fs-3"></i>
-                            </div>
-                            <div class="admin-feed-kpi-stat">{{ $managedUser->exists ? ($managedUser->suspended_at ? 'Suspended' : 'Active') : 'Active' }}</div>
-                            <div class="fw-semibold mt-1">Access Status</div>
-                            <div class="small text-secondary mt-auto pt-2">Security</div>
-                        </div>
+                <div class="col-6 col-xl-3">
+                    <div class="gam-stat-card">
+                        <div class="small text-secondary">System Role</div>
+                        <div class="fs-5 fw-bold mt-1 text-primary">{{ $managedUser->systemRoleLabel() }}</div>
                     </div>
                 </div>
             </div>
+            @endif
 
             {{-- Edit form --}}
-            <div class="card adminuiux-card shadow-sm mb-4">
-                <div class="card-header bg-primary-subtle">
-                    <div class="fw-semibold">Account Details</div>
-                    <div class="small text-secondary mt-1">Update identity, role, and access settings for this account.</div>
-                </div>
-                <div class="card-body">
+            <div class="card form-card mb-4">
+                <div class="card-body p-4">
                     <form method="POST" action="{{ $formAction }}">
                         @csrf
                         @if ($formMethod !== 'POST')
@@ -168,9 +152,11 @@
                             <div class="col-12 col-md-6" x-data="{ role: '{{ old('system_role', $managedUser->system_role ?? 'learner') }}' }">
                                 <label for="system_role" class="form-label">System Role</label>
                                 <select id="system_role" name="system_role" class="form-select form-select-sm" x-model="role">
+                                    <option value="parent">Parent</option>
                                     <option value="learner">Learner</option>
                                     <option value="manager">Manager</option>
                                     <option value="slt_manager">SLT Manager</option>
+                                    <option value="trustee">Trustee</option>
                                     <option value="site_admin">Site Administrator</option>
                                 </select>
                                 <div class="form-text">Controls what admin features this user can access. Managers see only their assigned teams.</div>

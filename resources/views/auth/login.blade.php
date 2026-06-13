@@ -197,6 +197,13 @@
                                             </div>
                                             <div class="form-text text-center mt-2">We'll email you a one-click login link</div>
                                         </form>
+
+                                        <div class="text-center mt-4 pt-3 border-top">
+                                            <p class="text-secondary small mb-1">Are you a parent?</p>
+                                            <a href="{{ route('parent.register') }}" class="btn btn-outline-theme btn-sm">
+                                                <i class="bi bi-people me-1"></i> Parent Registration
+                                            </a>
+                                        </div>
                                     </div>
                                 </div>
                                 @if (Route::has('password.request'))

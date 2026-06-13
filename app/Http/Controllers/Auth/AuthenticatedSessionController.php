@@ -29,7 +29,13 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        $defaultRoute = Gate::forUser($request->user())->allows('admin-access')
+        $user = $request->user();
+
+        if ($user->isParent()) {
+            return redirect()->intended(route('app.parent.dashboard', absolute: false));
+        }
+
+        $defaultRoute = Gate::forUser($user)->allows('admin-access')
             ? route('app.admin.assignments', absolute: false)
             : route('app.feed', absolute: false);
 

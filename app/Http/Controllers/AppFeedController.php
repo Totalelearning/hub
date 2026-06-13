@@ -443,7 +443,7 @@ class AppFeedController extends Controller
 
         $assignedCourses = Course::query()
             ->where('status', 'published')
-            ->whereHas('assignedUsers', fn ($q) => $q->where('user_id', $userId))
+            ->whereHas('assignedUsers', fn ($q) => $q->where('user_id', $userId)->where('status', '!=', 'completed'))
             ->withCount('modules')
             ->with('modules:id,title')
             ->orderByDesc('updated_at')
@@ -508,30 +508,77 @@ class AppFeedController extends Controller
     public function required(): View
     {
         $data = $this->index()->getData();
-        $data['catalogueTitle'] = 'Required';
-        $data['catalogueSubtitle'] = 'Compliance-critical and mandatory items that need attention first.';
-        $data['catalogueModules'] = $data['requiredModules'];
-        $data['catalogueCountLabel'] = $data['requiredModules']->count().' required';
-        $data['catalogueEmptyMessage'] = 'No required modules are visible right now.';
-        $data['activeLearnerPage'] = 'required';
-        $data['catalogueSectionLabel'] = 'Required';
-        $data['cataloguePrimaryCtaLabel'] = 'Open dashboard priorities';
+        $userId = auth()->id();
+
+        // All courses (including completed), sorted: outstanding first, completed last
+        $allCourses = Course::query()
+            ->where('status', 'published')
+            ->whereHas('assignedUsers', fn ($q) => $q->where('user_id', $userId))
+            ->withCount('modules')
+            ->with('modules:id,title')
+            ->get();
+
+        if ($allCourses->isNotEmpty()) {
+            $allModuleIds = $allCourses->flatMap(fn ($c) => $c->modules->pluck('id'))->unique();
+            $progressMap = ModuleProgress::where('user_id', $userId)
+                ->whereIn('learning_module_id', $allModuleIds)
+                ->get()
+                ->keyBy('learning_module_id');
+
+            $allCourses->each(function ($course) use ($progressMap) {
+                $moduleIds = $course->modules->pluck('id');
+                $total = $moduleIds->count();
+                $completed = $moduleIds->filter(fn ($id) => ($progressMap->get($id)?->status ?? '') === 'completed')->count();
+                $avgPercent = $total > 0
+                    ? (int) round($moduleIds->map(fn ($id) => (int) ($progressMap->get($id)?->percent_complete ?? 0))->avg())
+                    : 0;
+                $course->setAttribute('course_progress_percent', $avgPercent);
+                $course->setAttribute('course_completed_modules', $completed);
+            });
+        }
+
+        $pivotStatuses = \Illuminate\Support\Facades\DB::table('course_user')
+            ->where('user_id', $userId)
+            ->pluck('status', 'course_id');
+
+        $allCourses->each(fn ($c) => $c->setAttribute('enrolment_status', $pivotStatuses[$c->id] ?? 'assigned'));
+
+        $allCourses = $allCourses->sortBy(fn ($c) => match ($c->enrolment_status) {
+            'assigned' => 0,
+            'in_progress' => 1,
+            'completed' => 2,
+            default => 1,
+        })->values();
+
+        $completedCount = $allCourses->where('enrolment_status', 'completed')->count();
+        $inProgressCount = $allCourses->where('enrolment_status', 'in_progress')->count();
+        $outstandingCount = $allCourses->count() - $completedCount;
+
+        $data['assignedCourses'] = $allCourses;
+        $data['catalogueTitle'] = 'Courses';
+        $data['catalogueSubtitle'] = 'All your assigned courses. Outstanding and required training is shown first.';
+        $data['catalogueModules'] = collect();
+        $data['catalogueCountLabel'] = $allCourses->count() . ' course' . ($allCourses->count() !== 1 ? 's' : '');
+        $data['catalogueEmptyMessage'] = null;
+        $data['activeLearnerPage'] = 'courses';
+        $data['catalogueSectionLabel'] = 'Courses';
+        $data['cataloguePrimaryCtaLabel'] = 'Back to dashboard';
         $data['cataloguePrimaryCtaHref'] = route('app.feed');
         $data['catalogueSummaryCards'] = collect([
             [
-                'label' => 'Overdue',
-                'value' => $data['requiredModules']->filter(fn (LearningModule $module) => (bool) ($module->assignment['is_overdue'] ?? false))->count(),
-                'summary' => 'Items needing immediate attention.',
-            ],
-            [
-                'label' => 'Due soon',
-                'value' => $data['requiredModules']->filter(fn (LearningModule $module) => (bool) ($module->assignment['is_due_soon'] ?? false))->count(),
-                'summary' => 'Required modules approaching deadline.',
+                'label' => 'Outstanding',
+                'value' => $outstandingCount,
+                'summary' => 'Courses still to complete.',
             ],
             [
                 'label' => 'In progress',
-                'value' => $data['requiredModules']->filter(fn (LearningModule $module) => ($module->user_progress_status ?? 'not_started') === 'in_progress')->count(),
-                'summary' => 'Mandatory learning already underway.',
+                'value' => $inProgressCount,
+                'summary' => 'Courses currently being worked on.',
+            ],
+            [
+                'label' => 'Completed',
+                'value' => $completedCount,
+                'summary' => 'Courses finished.',
             ],
         ]);
 

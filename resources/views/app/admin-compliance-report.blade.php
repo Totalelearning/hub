@@ -29,6 +29,16 @@
             background: #fff;
             text-align: center;
         }
+        .section-toggle { cursor: pointer; user-select: none; display: flex; align-items: center; justify-content: space-between; }
+        .section-toggle .chevron { transition: transform 200ms ease; font-size: 0.85rem; color: #94a3b8; }
+        .section-toggle .chevron.collapsed { transform: rotate(-90deg); }
+        .section-collapse { transition: max-height 300ms ease, opacity 200ms ease; overflow: hidden; }
+        .section-collapse.open { max-height: 5000px; opacity: 1; }
+        .section-collapse.closed { max-height: 0; opacity: 0; }
+        .filter-chip { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.25rem 0.65rem; border-radius: 20px; font-size: 0.8rem; font-weight: 500; background: rgba(59, 130, 246, 0.1); color: #2563eb; border: 1px solid rgba(59, 130, 246, 0.2); text-decoration: none; }
+        .filter-chip:hover { background: rgba(59, 130, 246, 0.2); color: #1d4ed8; }
+        .filter-chip .bi-x-lg { font-size: 0.55rem; opacity: 0.6; }
+        .filter-chip:hover .bi-x-lg { opacity: 1; }
     </style>
 @endpush
 
@@ -44,24 +54,24 @@
             {{-- Hero --}}
             <div class="mb-4 admin-feed-hero">
                 <div class="row align-items-center g-0 p-4 p-lg-5">
-                    <div class="col-12 col-lg-8 admin-feed-hero-copy mb-3 mb-lg-0">
+                    <div class="col-12 col-lg-8 admin-feed-hero-copy">
                         <div class="text-uppercase fw-semibold text-primary mb-2" style="letter-spacing:.3em;font-size:.72rem;">Compliance Reports</div>
                         <h1 class="fs-3 fw-semibold mb-2">{{ __('Compliance Report') }}</h1>
-                        <p class="text-secondary mb-0">Course completion rates, knowledge check results, and learning path progress across all published courses.</p>
-                    </div>
-                    <div class="col-12 col-lg-4 d-flex flex-wrap gap-2 justify-content-lg-end">
-                        <a href="{{ route('app.admin.compliance.learners', array_filter([
-                            'role' => $filters['role'] ?? null,
-                            'team' => $filters['team'] ?? null,
-                            'location' => $filters['location'] ?? null,
-                            'status' => $filters['status'] ?? null,
-                        ])) }}" class="btn btn-outline-theme">Learner Matrix</a>
-                        <a href="{{ route('app.admin.compliance.export', array_filter([
-                            'role' => $filters['role'] ?? null,
-                            'team' => $filters['team'] ?? null,
-                            'location' => $filters['location'] ?? null,
-                            'status' => $filters['status'] ?? null,
-                        ])) }}" class="btn btn-theme">Export CSV</a>
+                        <p class="text-secondary mb-3">Course completion rates, knowledge check results, and learning path progress across all published courses.</p>
+                        <div class="d-flex flex-wrap gap-2">
+                            <a href="{{ route('app.admin.compliance.learners', array_filter([
+                                'role' => $filters['role'] ?? null,
+                                'team' => $filters['team'] ?? null,
+                                'location' => $filters['location'] ?? null,
+                                'status' => $filters['status'] ?? null,
+                            ])) }}" class="btn btn-outline-theme btn-sm"><i class="bi bi-people me-1"></i>Learner Matrix</a>
+                            <a href="{{ route('app.admin.compliance.export', array_filter([
+                                'role' => $filters['role'] ?? null,
+                                'team' => $filters['team'] ?? null,
+                                'location' => $filters['location'] ?? null,
+                                'status' => $filters['status'] ?? null,
+                            ])) }}" class="btn btn-theme btn-sm"><i class="bi bi-download me-1"></i>Export CSV</a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -111,29 +121,7 @@
             {{-- Filter Card --}}
             <div class="card adminuiux-card shadow-sm mb-4">
                 <div class="card-body p-4">
-                    <div class="row align-items-center mb-3">
-                        <div class="col-auto">
-                            <a href="{{ route('app.admin.assignments') }}" class="btn btn-sm btn-outline-secondary rounded-circle"><i class="bi bi-arrow-left"></i></a>
-                        </div>
-                        <div class="col">
-                            <div class="text-uppercase fw-semibold text-primary" style="letter-spacing:.2em;font-size:.7rem;">Course Completions</div>
-                            <h5 class="fw-semibold mb-0">Compliance Report</h5>
-                        </div>
-                        <div class="col-auto d-flex flex-wrap gap-2">
-                            <a href="{{ route('app.admin.compliance.export', array_filter([
-                                'role' => $filters['role'] ?? null,
-                                'team' => $filters['team'] ?? null,
-                                'location' => $filters['location'] ?? null,
-                                'status' => $filters['status'] ?? null,
-                            ])) }}" class="btn btn-outline-theme btn-sm"><i class="bi bi-box-arrow-up-right me-1"></i> Export</a>
-                            <a href="{{ route('app.admin.compliance.learners', array_filter([
-                                'role' => $filters['role'] ?? null,
-                                'team' => $filters['team'] ?? null,
-                                'location' => $filters['location'] ?? null,
-                                'status' => $filters['status'] ?? null,
-                            ])) }}" class="btn btn-outline-theme btn-sm"><i class="bi bi-people me-1"></i> Learner Results</a>
-                        </div>
-                    </div>
+                    <div class="text-uppercase fw-semibold text-primary mb-3" style="letter-spacing:.2em;font-size:.7rem;">Filters</div>
                     <form method="GET" action="{{ route('app.admin.compliance') }}">
                         <div class="row g-3 align-items-end">
                             <div class="col-12 col-md-6 col-xl">
@@ -425,7 +413,19 @@
                             @if ($activeFilterMap->isNotEmpty())
                                 <div class="d-flex flex-wrap gap-2 mt-3">
                                     @foreach ($activeFilterMap as $label => $value)
-                                        <span class="badge bg-primary-subtle text-primary">{{ $label }}: {{ $value }}</span>
+                                        @php
+                                            $clearParams = array_filter([
+                                                'role' => $filters['role'] ?? null,
+                                                'team' => $filters['team'] ?? null,
+                                                'location' => $filters['location'] ?? null,
+                                                'status' => $filters['status'] ?? null,
+                                            ]);
+                                            unset($clearParams[strtolower($label)]);
+                                        @endphp
+                                        <a href="{{ route('app.admin.compliance', $clearParams) }}" class="filter-chip">
+                                            {{ $label }}: {{ $value }}
+                                            <i class="bi bi-x-lg"></i>
+                                        </a>
                                     @endforeach
                                 </div>
                             @endif
@@ -451,13 +451,19 @@
             </div>
 
             {{-- Course Breakdown --}}
-            <div class="card adminuiux-card shadow-sm mb-4">
+            <div class="card adminuiux-card shadow-sm mb-4" x-data="{ open: true }">
                 <div class="card-body p-0">
                     <div class="px-4 py-3 border-bottom">
-                        <div class="text-uppercase fw-semibold text-primary" style="letter-spacing:.2em;font-size:.7rem;">By Course</div>
-                        <h6 class="fw-semibold mt-1 mb-0">Course Completion Breakdown</h6>
-                        <p class="small text-secondary mb-0">Enrolment and completion status for each published course.</p>
+                        <div class="section-toggle" @click="open = !open">
+                            <div>
+                                <div class="text-uppercase fw-semibold text-primary" style="letter-spacing:.2em;font-size:.7rem;">By Course</div>
+                                <h6 class="fw-semibold mt-1 mb-0">Course Completion Breakdown</h6>
+                                <p class="small text-secondary mb-0">Enrolment and completion status for each published course.</p>
+                            </div>
+                            <i class="bi bi-chevron-down chevron" :class="{ 'collapsed': !open }"></i>
+                        </div>
                     </div>
+                    <div class="section-collapse" :class="open ? 'open' : 'closed'">
                     <div class="table-responsive">
                         <table class="table table-hover mb-0">
                             <thead class="table-light">
@@ -498,17 +504,24 @@
                             </tbody>
                         </table>
                     </div>
+                    </div>{{-- /section-collapse --}}
                 </div>
             </div>
 
             {{-- Knowledge Check Results --}}
-            <div class="card adminuiux-card shadow-sm mb-4">
+            <div class="card adminuiux-card shadow-sm mb-4" x-data="{ open: false }">
                 <div class="card-body p-0">
                     <div class="px-4 py-3 border-bottom">
-                        <div class="text-uppercase fw-semibold text-primary" style="letter-spacing:.2em;font-size:.7rem;">Knowledge Checks</div>
-                        <h6 class="fw-semibold mt-1 mb-0">Recent Knowledge Check Results</h6>
-                        <p class="small text-secondary mb-0">Post-completion knowledge checks showing pass/fail outcomes.</p>
+                        <div class="section-toggle" @click="open = !open">
+                            <div>
+                                <div class="text-uppercase fw-semibold text-primary" style="letter-spacing:.2em;font-size:.7rem;">Knowledge Checks</div>
+                                <h6 class="fw-semibold mt-1 mb-0">Recent Knowledge Check Results</h6>
+                                <p class="small text-secondary mb-0">Post-completion knowledge checks showing pass/fail outcomes.</p>
+                            </div>
+                            <i class="bi bi-chevron-down chevron" :class="{ 'collapsed': !open }"></i>
+                        </div>
                     </div>
+                    <div class="section-collapse" :class="open ? 'open' : 'closed'">
                     <div class="table-responsive">
                         <table class="table table-hover mb-0">
                             <thead class="table-light">
@@ -553,11 +566,23 @@
                             </tbody>
                         </table>
                     </div>
+                    </div>{{-- /section-collapse --}}
                 </div>
             </div>
 
             {{-- Learning Paths + Path Coverage --}}
-            <div class="row g-4 mb-4">
+            <div class="card adminuiux-card shadow-sm mb-4" x-data="{ open: false }">
+                <div class="card-body p-4">
+                    <div class="section-toggle" @click="open = !open">
+                        <div>
+                            <div class="text-uppercase fw-semibold text-primary" style="letter-spacing:.2em;font-size:.7rem;">Learning Paths</div>
+                            <h6 class="fw-semibold mt-1 mb-0">Learning Path Progress & Coverage</h6>
+                            <p class="small text-secondary mb-0">Path completion and role coverage across all published learning paths.</p>
+                        </div>
+                        <i class="bi bi-chevron-down chevron" :class="{ 'collapsed': !open }"></i>
+                    </div>
+                    <div class="section-collapse mt-3" :class="open ? 'open' : 'closed'">
+            <div class="row g-4">
                 <div class="col-12 col-xl-6">
                     <div class="card adminuiux-card shadow-sm h-100" id="learning-track-progress-section">
                         <div class="card-body p-0">
@@ -633,6 +658,9 @@
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+                    </div>{{-- /section-collapse --}}
                 </div>
             </div>
 

@@ -70,79 +70,56 @@
 
     <main class="adminuiux-content has-sidebar" onclick="contentClick()">
         <div class="container mt-4" id="main-content">
-            {{-- Hero row --}}
-            <div class="row align-items-center mb-4">
-                <div class="col-12">
-                    <span class="learner-section-title d-inline-block mb-2">Assignment Reports</span>
-                    <h1>Admin <span class="text-theme-1">Assignments</span></h1>
-                    <p class="text-secondary">Clear assignment reports for learner progress, results, reminder activity, and reinforcement proof.</p>
-                    <div class="d-flex flex-wrap gap-2 mt-3">
-                        <a href="{{ route('app.admin.assignments.settings-export') }}" class="btn btn-theme">
-                            <i class="bi bi-download me-1"></i> Export Settings CSV
-                        </a>
-                        <a href="{{ route('app.admin.scorm.index') }}" class="btn btn-outline-theme">
-                            Open SCORM Reporting
-                        </a>
-                        <a href="{{ route('app.admin.assignments.export') }}" class="btn btn-outline-theme">
-                            Assignment Results Export
-                        </a>
+            {{-- Hero --}}
+            <div class="mb-4 admin-feed-hero">
+                <div class="row align-items-center g-0 p-4 p-lg-5">
+                    <div class="col-12 col-lg-8 admin-feed-hero-copy">
+                        <div class="text-uppercase fw-semibold text-primary mb-2" style="letter-spacing:.3em;font-size:.72rem;">{{ auth()->user()->systemRoleLabel() }} Dashboard</div>
+                        <h1 class="fs-3 fw-semibold mb-2">Welcome, {{ auth()->user()->name }}</h1>
+                        <p class="text-secondary mb-0">Learner progress, assignment status, compliance tracking, and reinforcement results at a glance.</p>
                     </div>
                 </div>
             </div>
 
-            {{-- 4 KPI cards --}}
+            {{-- Analytics snapshot --}}
+            @php
+                $totalAssigned = $summary['analytics_total_assigned'] ?? 0;
+                $totalCompleted = $summary['analytics_total_completed'] ?? 0;
+                $totalInProgress = $summary['analytics_total_in_progress'] ?? 0;
+                $totalNotStarted = $summary['analytics_total_not_started'] ?? 0;
+                $completionRate = $summary['analytics_completion_rate'] ?? 0;
+                $learnersCount = $summary['analytics_total_learners'] ?? 0;
+            @endphp
             <div class="row g-3 mb-4">
-                <div class="col-12 col-md-6 col-lg-3">
-                    <a href="{{ route('app.admin.compliance', ['status' => 'overdue']) }}" class="card assignment-feed-kpi p-4 text-decoration-none d-block h-100">
-                        <div class="d-flex flex-column align-items-center text-center h-100">
-                            <div class="assignment-feed-kpi-icon mb-3" style="color:#dc2626;background:linear-gradient(135deg,rgba(254,226,226,.98),rgba(255,237,213,.98));">
-                                <i class="bi bi-exclamation-triangle fs-4"></i>
-                            </div>
-                            <div class="fs-2 fw-semibold text-dark">{{ $summary['overdue_assignments_count'] ?? 0 }}</div>
-                            <div class="fw-semibold mt-1">Overdue</div>
-                            <div class="small text-secondary mt-1">Learners needing action</div>
-                            <div class="mt-auto pt-3"><span class="badge rounded-pill text-bg-danger">Priority</span></div>
-                        </div>
-                    </a>
+                <div class="col-6 col-lg-3">
+                    <div class="card assignment-feed-kpi p-4 h-100">
+                        <div class="small text-secondary">Total Enrolments</div>
+                        <div class="fs-3 fw-bold mt-1">{{ number_format($totalAssigned) }}</div>
+                        <div class="small text-secondary mt-1">{{ $learnersCount }} learners</div>
+                    </div>
                 </div>
-                <div class="col-12 col-md-6 col-lg-3">
-                    <a href="{{ route('app.admin.assignments.reminders.run') }}" class="card assignment-feed-kpi p-4 text-decoration-none d-block h-100">
-                        <div class="d-flex flex-column align-items-center text-center h-100">
-                            <div class="assignment-feed-kpi-icon mb-3" style="color:#b45309;background:linear-gradient(135deg,rgba(254,243,199,.98),rgba(255,237,213,.98));">
-                                <i class="bi bi-bell fs-4"></i>
-                            </div>
-                            <div class="fs-2 fw-semibold text-dark">{{ $summary['pending_reminders_count'] ?? 0 }}</div>
-                            <div class="fw-semibold mt-1">Reminders</div>
-                            <div class="small text-secondary mt-1">Queued reminder batches</div>
-                            <div class="mt-auto pt-3"><span class="badge rounded-pill text-bg-warning">Follow-up</span></div>
+                <div class="col-6 col-lg-3">
+                    <div class="card assignment-feed-kpi p-4 h-100">
+                        <div class="small text-secondary">Completion Rate</div>
+                        <div class="fs-3 fw-bold mt-1 {{ $completionRate >= 75 ? 'text-success' : ($completionRate >= 50 ? 'text-warning' : 'text-danger') }}">{{ $completionRate }}%</div>
+                        <div class="mt-2" style="height:8px;border-radius:4px;background:rgba(226,232,240,0.6);">
+                            <div style="height:100%;border-radius:4px;width:{{ $completionRate }}%;" class="{{ $completionRate >= 75 ? 'bg-success' : ($completionRate >= 50 ? 'bg-warning' : 'bg-danger') }}"></div>
                         </div>
-                    </a>
+                    </div>
                 </div>
-                <div class="col-12 col-md-6 col-lg-3">
-                    <a href="{{ route('app.admin.scorm.index') }}" class="card assignment-feed-kpi p-4 text-decoration-none d-block h-100">
-                        <div class="d-flex flex-column align-items-center text-center h-100">
-                            <div class="assignment-feed-kpi-icon mb-3">
-                                <i class="bi bi-arrow-repeat fs-4"></i>
-                            </div>
-                            <div class="fs-2 fw-semibold text-dark">{{ $summary['scorm_required_assignments_count'] ?? 0 }}</div>
-                            <div class="fw-semibold mt-1">SCORM</div>
-                            <div class="small text-secondary mt-1">Tracked SCORM assignments</div>
-                            <div class="mt-auto pt-3"><span class="badge rounded-pill text-bg-primary">Tracking</span></div>
-                        </div>
-                    </a>
+                <div class="col-6 col-lg-3">
+                    <div class="card assignment-feed-kpi p-4 h-100">
+                        <div class="small text-secondary">Completed</div>
+                        <div class="fs-3 fw-bold text-success mt-1">{{ number_format($totalCompleted) }}</div>
+                        <div class="small text-secondary mt-1">{{ $totalInProgress }} in progress</div>
+                    </div>
                 </div>
-                <div class="col-12 col-md-6 col-lg-3">
-                    <a href="#reinforcement-proof-section" class="card assignment-feed-kpi p-4 text-decoration-none d-block h-100">
-                        <div class="d-flex flex-column align-items-center text-center h-100">
-                            <div class="assignment-feed-kpi-icon mb-3" style="color:#7c3aed;background:linear-gradient(135deg,rgba(237,233,254,.98),rgba(243,232,255,.98));">
-                                <i class="bi bi-shield-check fs-4"></i>
-                            </div>
-                            <div class="fs-2 fw-semibold text-dark">{{ $summary['reinforcement_failed_count'] ?? 0 }}</div>
-                            <div class="fw-semibold mt-1">Reinforcement</div>
-                            <div class="small text-secondary mt-1">Failed follow-up checks</div>
-                            <div class="mt-auto pt-3"><span class="badge rounded-pill" style="background:#7c3aed;color:#fff">Proof</span></div>
-                        </div>
-                    </a>
+                <div class="col-6 col-lg-3">
+                    <div class="card assignment-feed-kpi p-4 h-100">
+                        <div class="small text-secondary">Not Started</div>
+                        <div class="fs-3 fw-bold mt-1 {{ $totalNotStarted > 0 ? 'text-warning' : 'text-success' }}">{{ number_format($totalNotStarted) }}</div>
+                        <div class="small text-secondary mt-1">{{ $summary['overdue_assignments_count'] ?? 0 }} overdue</div>
+                    </div>
                 </div>
             </div>
 
@@ -229,12 +206,44 @@
                         'title' => 'Assignment status breakdown',
                         'subtitle' => 'See how assigned learning is split between completed, active, and untouched work.',
                         'items' => $assignmentStatusChart,
-                        'centerValue' => $summary['course_completion_rate'] ?? 0,
+                        'centerValue' => $summary['analytics_completion_rate'] ?? 0,
                         'centerLabel' => 'Completion %',
-                        'badge' => ($summary['course_completion_total_assignments'] ?? 0).' assigned',
+                        'badge' => ($summary['analytics_total_assigned'] ?? 0).' assigned',
                         'cardClass' => 'assignment-report-summary-card assignment-feed-summary p-5 h-100',
                     ])
                 </div>
+                @if (auth()->user()->hasUnrestrictedView() && !empty($summary['location_completion_rows']))
+                {{-- Trustee: Location completion ranking --}}
+                <div class="col-12 col-lg-6">
+                    <div class="assignment-report-summary-card assignment-feed-summary p-5 h-100">
+                        <div class="d-flex justify-content-between align-items-start mb-4">
+                            <div>
+                                <div class="text-uppercase fw-semibold text-primary" style="letter-spacing:.2em;font-size:.7rem;">Location Performance</div>
+                                <h6 class="fw-semibold mt-1 mb-0">Completion by school</h6>
+                                <p class="small text-secondary mb-0">Lowest completion rates shown first.</p>
+                            </div>
+                            <span class="badge rounded-pill bg-primary-subtle text-primary">{{ count($summary['location_completion_rows']) }} locations</span>
+                        </div>
+                        <div class="d-flex flex-column gap-3">
+                            @foreach ($summary['location_completion_rows'] as $locRow)
+                                <div>
+                                    <div class="d-flex justify-content-between align-items-baseline mb-1">
+                                        <span class="small fw-semibold">{{ $locRow['location'] }}</span>
+                                        <span class="small fw-bold {{ $locRow['completion_rate'] >= 90 ? 'text-success' : ($locRow['completion_rate'] >= 75 ? 'text-primary' : ($locRow['completion_rate'] >= 50 ? 'text-warning' : 'text-danger')) }}">{{ $locRow['completion_rate'] }}%</span>
+                                    </div>
+                                    <div class="progress" style="height:8px;border-radius:4px;">
+                                        <div class="progress-bar {{ $locRow['completion_rate'] >= 90 ? 'bg-success' : ($locRow['completion_rate'] >= 75 ? 'bg-primary' : ($locRow['completion_rate'] >= 50 ? 'bg-warning' : 'bg-danger')) }}" style="width:{{ $locRow['completion_rate'] }}%;border-radius:4px;"></div>
+                                    </div>
+                                    <div class="d-flex gap-3 mt-1">
+                                        <span class="text-secondary" style="font-size:.68rem;">{{ $locRow['completed'] }} of {{ $locRow['enrolled'] }} completed</span>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+                @else
+                {{-- SLT / Manager: Priority Queue only --}}
                 <div class="col-12 col-lg-6">
                     @include('app.partials.admin-report-bars', [
                         'eyebrow' => 'Priority Queue',
@@ -245,28 +254,7 @@
                         'cardClass' => 'assignment-report-summary-card assignment-feed-summary p-5 h-100',
                     ])
                 </div>
-                <div class="col-12 col-lg-6">
-                    @include('app.partials.admin-report-donut', [
-                        'eyebrow' => 'Reinforcement',
-                        'title' => 'Follow-up proof health',
-                        'subtitle' => 'Track ongoing reinforcement, retries, and proof after completion.',
-                        'items' => $assignmentReinforcementChart,
-                        'centerValue' => $summary['reinforcement_total_count'] ?? 0,
-                        'centerLabel' => 'Touchpoints',
-                        'badge' => ($summary['reinforcement_remediation_assigned_count'] ?? 0).' remediation',
-                        'cardClass' => 'assignment-report-summary-card assignment-feed-summary p-5 h-100',
-                    ])
-                </div>
-                <div class="col-12 col-lg-6">
-                    @include('app.partials.admin-report-bars', [
-                        'eyebrow' => 'Role Risk',
-                        'title' => 'Overdue assignments by role',
-                        'subtitle' => 'The roles with the highest overdue volume rise to the top.',
-                        'items' => $assignmentRoleBars,
-                        'badge' => 'Top 5 roles',
-                        'cardClass' => 'assignment-report-summary-card assignment-feed-summary p-5 h-100',
-                    ])
-                </div>
+                @endif
             </div>
 
             <div class="sr-only">Learning Events</div>

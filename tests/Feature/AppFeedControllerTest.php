@@ -118,7 +118,12 @@ class AppFeedControllerTest extends TestCase
         $response->assertOk();
         $response->assertViewHas('assignedCourses');
         $assignedCourses = $response->viewData('assignedCourses');
-        $this->assertCount(3, $assignedCourses);
+        // Only non-completed courses appear (in_progress + assigned)
+        $this->assertCount(2, $assignedCourses);
+        $titles = $assignedCourses->pluck('title')->toArray();
+        $this->assertContains('In Progress Course', $titles);
+        $this->assertContains('Assigned Course', $titles);
+        $this->assertNotContains('Completed Course', $titles);
     }
 
     public function test_feed_shows_zero_kpis_for_user_with_no_enrolments(): void
@@ -148,7 +153,7 @@ class AppFeedControllerTest extends TestCase
         $response = $this->actingAs($data['user'])->get(route('app.feed.required'));
 
         $response->assertOk();
-        $response->assertViewHas('catalogueTitle', 'Required');
+        $response->assertViewHas('catalogueTitle', 'Courses');
     }
 
     public function test_recommended_catalogue_page_loads(): void

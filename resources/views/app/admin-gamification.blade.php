@@ -35,6 +35,12 @@
         border-radius: 3px;
         transition: width 300ms ease;
     }
+    .section-toggle { cursor: pointer; user-select: none; display: flex; align-items: center; justify-content: space-between; }
+    .section-toggle .chevron { transition: transform 200ms ease; font-size: 0.85rem; color: #94a3b8; }
+    .section-toggle .chevron.collapsed { transform: rotate(-90deg); }
+    .section-collapse { transition: max-height 300ms ease, opacity 200ms ease; overflow: hidden; }
+    .section-collapse.open { max-height: 5000px; opacity: 1; }
+    .section-collapse.closed { max-height: 0; opacity: 0; }
 </style>
 @endpush
 
@@ -51,14 +57,15 @@
             <div class="mb-4 admin-feed-hero">
                 <div class="row align-items-center g-0 p-4 p-lg-5">
                     <div class="col-12 col-lg-8 admin-feed-hero-copy">
+                        <div class="text-uppercase fw-semibold text-primary mb-2" style="letter-spacing:.3em;font-size:.72rem;">Gamification</div>
                         <h1 class="fs-3 fw-semibold mb-2">Gamification</h1>
-                        <p class="text-secondary mb-0">XP leaderboards, streak activity, and badge distribution across all learners.</p>
-                    </div>
-                    <div class="col-12 col-lg-4 text-lg-end mt-3 mt-lg-0">
-                        <a href="{{ route('app.admin.gamification.export') }}" class="btn btn-theme btn-sm me-2"><i class="bi bi-download me-1"></i>Export CSV</a>
-                        @if (auth()->user()?->isSiteAdmin())
-                            <a href="{{ route('app.admin.gamification.settings') }}" class="btn btn-outline-theme btn-sm"><i class="bi bi-sliders me-1"></i>Settings</a>
-                        @endif
+                        <p class="text-secondary mb-3">XP leaderboards, streak activity, and badge distribution across all learners.</p>
+                        <div class="d-flex flex-wrap gap-2">
+                            @if (auth()->user()?->isSiteAdmin())
+                                <a href="{{ route('app.admin.gamification.settings') }}" class="btn btn-outline-theme btn-sm"><i class="bi bi-sliders me-1"></i>Settings</a>
+                            @endif
+                            <a href="{{ route('app.admin.gamification.export') }}" class="btn btn-theme btn-sm"><i class="bi bi-download me-1"></i>Export CSV</a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -93,118 +100,138 @@
 
             <div class="row g-4">
                 {{-- Team Leaderboard --}}
-                <div class="col-12 col-lg-6">
+                <div class="col-12" x-data="{ open: false }">
                     <div class="card gam-card">
-                        <div class="card-header px-4 py-3 border-bottom">
-                            <span class="gam-section-title">Team Leaderboard</span>
-                        </div>
-                        <div class="card-body p-0">
-                            @if ($teamLeaderboard->isEmpty())
-                                <div class="text-center py-4 text-secondary">No team data.</div>
-                            @else
-                                <div class="table-responsive">
-                                    <table class="table table-hover mb-0">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th class="ps-4" style="width: 50px;">#</th>
-                                                <th>Team</th>
-                                                <th class="text-center">Members</th>
-                                                <th class="text-center">Avg XP</th>
-                                                <th class="text-end pe-4">Total XP</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach ($teamLeaderboard as $team)
-                                                <tr>
-                                                    <td class="ps-4 fw-semibold">{{ $team->rank }}</td>
-                                                    <td>{{ $team->team }}</td>
-                                                    <td class="text-center">{{ $team->member_count }}</td>
-                                                    <td class="text-center">{{ number_format($team->avg_xp) }}</td>
-                                                    <td class="text-end pe-4 fw-semibold">{{ number_format($team->total_xp) }}</td>
-                                                </tr>
-                                            @endforeach
-                                        </tbody>
-                                    </table>
+                        <div class="card-body p-4">
+                            <div class="section-toggle" @click="open = !open">
+                                <div>
+                                    <div class="gam-section-title mb-0">Team Leaderboard <span class="badge bg-primary-subtle text-primary ms-2" style="font-size:.7rem;">{{ $teamLeaderboard->count() }}</span></div>
+                                    <p class="small text-secondary mb-0 mt-1">Teams ranked by total XP earned.</p>
                                 </div>
-                            @endif
+                                <i class="bi bi-chevron-down chevron" :class="{ 'collapsed': !open }"></i>
+                            </div>
+                            <div class="section-collapse mt-3" :class="open ? 'open' : 'closed'">
+                                @if ($teamLeaderboard->isEmpty())
+                                    <div class="text-center py-4 text-secondary">No team data.</div>
+                                @else
+                                    <div class="table-responsive">
+                                        <table class="table table-hover mb-0">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th class="px-3 py-2" style="width:50px;">#</th>
+                                                    <th class="px-3 py-2">Team</th>
+                                                    <th class="px-3 py-2 text-center">Members</th>
+                                                    <th class="px-3 py-2 text-center">Avg XP</th>
+                                                    <th class="px-3 py-2 text-end">Total XP</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach ($teamLeaderboard as $team)
+                                                    <tr>
+                                                        <td class="px-3 fw-semibold">{{ $team->rank }}</td>
+                                                        <td class="px-3">{{ $team->team }}</td>
+                                                        <td class="px-3 text-center">{{ $team->member_count }}</td>
+                                                        <td class="px-3 text-center">{{ number_format($team->avg_xp) }}</td>
+                                                        <td class="px-3 text-end fw-semibold">{{ number_format($team->total_xp) }}</td>
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                @endif
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 {{-- Top Earners --}}
-                <div class="col-12 col-lg-6">
+                <div class="col-12" x-data="{ open: false }">
                     <div class="card gam-card">
-                        <div class="card-header px-4 py-3 border-bottom">
-                            <span class="gam-section-title">Top Earners</span>
-                        </div>
-                        <div class="card-body p-0">
-                            @if ($topEarners->isEmpty())
-                                <div class="text-center py-4 text-secondary">No XP earned yet.</div>
-                            @else
-                                <div class="table-responsive">
-                                    <table class="table table-hover mb-0">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th class="ps-4" style="width: 50px;">#</th>
-                                                <th>Learner</th>
-                                                <th>Team</th>
-                                                <th class="text-end pe-4">XP</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach ($topEarners as $i => $earner)
-                                                <tr>
-                                                    <td class="ps-4 fw-semibold">{{ $i + 1 }}</td>
-                                                    <td>
-                                                        <a href="{{ route('app.admin.users.show', $earner->id) }}" class="text-decoration-none">{{ $earner->name }}</a>
-                                                    </td>
-                                                    <td class="text-secondary small">{{ $earner->team ?? '—' }}</td>
-                                                    <td class="text-end pe-4 fw-semibold">{{ number_format($earner->total_xp) }}</td>
-                                                </tr>
-                                            @endforeach
-                                        </tbody>
-                                    </table>
+                        <div class="card-body p-4">
+                            <div class="section-toggle" @click="open = !open">
+                                <div>
+                                    <div class="gam-section-title mb-0">Top Earners <span class="badge bg-primary-subtle text-primary ms-2" style="font-size:.7rem;">{{ $topEarners->count() }}</span></div>
+                                    <p class="small text-secondary mb-0 mt-1">Learners with the highest XP.</p>
                                 </div>
-                            @endif
+                                <i class="bi bi-chevron-down chevron" :class="{ 'collapsed': !open }"></i>
+                            </div>
+                            <div class="section-collapse mt-3" :class="open ? 'open' : 'closed'">
+                                @if ($topEarners->isEmpty())
+                                    <div class="text-center py-4 text-secondary">No XP earned yet.</div>
+                                @else
+                                    <div class="table-responsive">
+                                        <table class="table table-hover mb-0">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th class="px-3 py-2" style="width:50px;">#</th>
+                                                    <th class="px-3 py-2">Learner</th>
+                                                    <th class="px-3 py-2">Team</th>
+                                                    <th class="px-3 py-2 text-end">XP</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach ($topEarners as $i => $earner)
+                                                    <tr>
+                                                        <td class="px-3 fw-semibold">{{ $i + 1 }}</td>
+                                                        <td class="px-3">
+                                                            <a href="{{ route('app.admin.users.show', $earner->id) }}" class="text-decoration-none">{{ $earner->name }}</a>
+                                                        </td>
+                                                        <td class="px-3 text-secondary small">{{ $earner->team ?? '—' }}</td>
+                                                        <td class="px-3 text-end fw-semibold">{{ number_format($earner->total_xp) }}</td>
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                @endif
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            {{-- Badge Distribution --}}
-            <div class="card gam-card mt-4 mb-4">
-                <div class="card-header px-4 py-3 border-bottom">
-                    <span class="gam-section-title">Badge Distribution</span>
-                </div>
-                <div class="card-body p-4">
-                    @if ($badgeDistribution->isEmpty())
-                        <div class="text-center py-4 text-secondary">No badges configured yet.</div>
-                    @else
-                        <div class="row g-3">
-                            @foreach ($badgeDistribution as $badge)
-                                @php
-                                    $pct = $totalLearners > 0 ? round(($badge->users_count / $totalLearners) * 100) : 0;
-                                @endphp
-                                <div class="col-12 col-md-6 col-xl-4">
-                                    <div class="d-flex align-items-start gap-3 p-3 rounded-3 bg-light">
-                                        <div class="avatar avatar-40 rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center flex-shrink-0">
-                                            <i class="bi {{ $badge->icon }}"></i>
-                                        </div>
-                                        <div class="flex-grow-1">
-                                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                                <h6 class="mb-0" style="font-size: .85rem;">{{ $badge->name }}</h6>
-                                                <span class="badge bg-primary-subtle text-primary" style="font-size: .7rem;">{{ $badge->users_count }} earned</span>
-                                            </div>
-                                            <div class="gam-badge-bar mt-1">
-                                                <div class="bar bg-primary" style="width: {{ $pct }}%;"></div>
-                                            </div>
-                                            <div class="text-secondary mt-1" style="font-size: .7rem;">{{ $pct }}% of {{ $totalLearners }} learners</div>
-                                        </div>
-                                    </div>
+                {{-- Badge Distribution --}}
+                <div class="col-12" x-data="{ open: false }">
+                    <div class="card gam-card mb-4">
+                        <div class="card-body p-4">
+                            <div class="section-toggle" @click="open = !open">
+                                <div>
+                                    <div class="gam-section-title mb-0">Badge Distribution <span class="badge bg-primary-subtle text-primary ms-2" style="font-size:.7rem;">{{ $badgeDistribution->count() }}</span></div>
+                                    <p class="small text-secondary mb-0 mt-1">How badges are distributed across learners.</p>
                                 </div>
-                            @endforeach
+                                <i class="bi bi-chevron-down chevron" :class="{ 'collapsed': !open }"></i>
+                            </div>
+                            <div class="section-collapse mt-3" :class="open ? 'open' : 'closed'">
+                                @if ($badgeDistribution->isEmpty())
+                                    <div class="text-center py-4 text-secondary">No badges configured yet.</div>
+                                @else
+                                    <div class="row g-3">
+                                        @foreach ($badgeDistribution as $badge)
+                                            @php
+                                                $pct = $totalLearners > 0 ? round(($badge->users_count / $totalLearners) * 100) : 0;
+                                            @endphp
+                                            <div class="col-12 col-md-6 col-xl-4">
+                                                <div class="d-flex align-items-start gap-3 p-3 rounded-3 bg-light">
+                                                    <div class="avatar avatar-40 rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center flex-shrink-0">
+                                                        <i class="bi {{ $badge->icon }}"></i>
+                                                    </div>
+                                                    <div class="flex-grow-1">
+                                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                                            <h6 class="mb-0" style="font-size:.85rem;">{{ $badge->name }}</h6>
+                                                            <span class="badge bg-primary-subtle text-primary" style="font-size:.7rem;">{{ $badge->users_count }} earned</span>
+                                                        </div>
+                                                        <div class="gam-badge-bar mt-1">
+                                                            <div class="bar bg-primary" style="width:{{ $pct }}%;"></div>
+                                                        </div>
+                                                        <div class="text-secondary mt-1" style="font-size:.7rem;">{{ $pct }}% of {{ $totalLearners }} learners</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @endif
+                            </div>
                         </div>
-                    @endif
+                    </div>
                 </div>
             </div>
 

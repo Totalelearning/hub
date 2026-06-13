@@ -181,61 +181,54 @@
                     </div>
                 </div>
             @else
-                <div class="row align-items-center mb-4">
-                    <!-- Welcome section -->
-                    <div class="col-12 col-md-6 col-lg-9 mb-4 mb-lg-0">
-                        <h1>Hi, <span class="text-theme-1">{{ $learnerFirstName }}</span></h1>
-                        <h2 class="mb-4">{{ $activeModule ? 'Keep your learning moving' : 'Start your learning today' }}</h2>
-                        <p>"The only way to do great work is to love what you do."<br><span class="text-secondary"> - Steve Jobs</span></p>
-                        <div class="d-flex flex-wrap gap-2 mt-3">
-                            @if ($activeModule)
-                                <a href="{{ route('app.modules.show', ['module' => $activeModule->id]) }}" class="btn btn-theme">
-                                    {{ ($activeModule->user_progress_status ?? 'not_started') === 'in_progress' ? 'Continue Course' : 'Open Course' }}
-                                </a>
+                @php
+                    $g = $gamification ?? [];
+                    $gStreak = $g['streak'] ?? ['current' => 0, 'longest' => 0, 'is_active_today' => false];
+                @endphp
+                <div class="card learner-hero-card mb-4">
+                    <div class="card-body p-4 p-lg-5">
+                        <div class="row align-items-center">
+                            {{-- Left: greeting + actions --}}
+                            <div class="col-12 col-lg-8 mb-3 mb-lg-0">
+                                <div class="text-uppercase fw-semibold text-primary mb-2" style="letter-spacing:.3em;font-size:.72rem;">Learner Dashboard</div>
+                                <h1 class="fs-2 fw-bold mb-1">Hi, <span class="text-theme-1">{{ $learnerFirstName }}</span></h1>
+                                <p class="text-secondary mb-3">{{ $activeModule ? 'Keep your learning moving — you\'re doing great.' : 'Start your learning journey today.' }}</p>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <a href="{{ route('app.feed.required') }}" class="btn btn-theme">Courses</a>
+                                </div>
+                            </div>
+                            {{-- Right: gamification summary --}}
+                            @if (!empty($g))
+                                <div class="col-12 col-lg-4">
+                                    <div class="d-flex flex-row flex-lg-column gap-3 gap-lg-2">
+                                        <a href="{{ route('app.leaderboard') }}" class="d-flex align-items-center gap-2 text-decoration-none" title="{{ $g['xp_in_level'] ?? 0 }}/{{ $g['xp_for_level'] ?? 1 }} to next level">
+                                            <i class="bi bi-star-fill text-primary"></i>
+                                            <span class="small"><span class="fw-semibold text-dark">Lvl {{ $g['level'] ?? 1 }}</span> <span class="text-secondary">&middot; {{ number_format($g['total_xp'] ?? 0) }} XP</span></span>
+                                        </a>
+                                        <span class="d-flex align-items-center gap-2" title="Best: {{ $gStreak['longest'] ?? 0 }} days">
+                                            <i class="bi bi-fire {{ ($gStreak['is_active_today'] ?? false) ? 'text-warning' : 'text-secondary' }}"></i>
+                                            <span class="small"><span class="fw-semibold text-dark">{{ $gStreak['current'] ?? 0 }}</span> <span class="text-secondary">day streak</span></span>
+                                        </span>
+                                        <a href="{{ route('app.leaderboard') }}" class="d-flex align-items-center gap-2 text-decoration-none">
+                                            <i class="bi bi-trophy text-info"></i>
+                                            <span class="small"><span class="text-secondary">Rank</span> <span class="fw-semibold text-dark">#{{ $g['rank'] ?? '—' }}</span></span>
+                                        </a>
+                                        <a href="{{ route('app.badges') }}" class="d-flex align-items-center gap-2 text-decoration-none">
+                                            <i class="bi bi-award text-success"></i>
+                                            <span class="small"><span class="fw-semibold text-dark">{{ $g['badge_count'] ?? 0 }}</span> <span class="text-secondary">badges</span></span>
+                                        </a>
+                                    </div>
+                                </div>
                             @endif
-                            <a href="{{ route('app.feed.required') }}" class="btn btn-outline-theme">Browse Required</a>
-                            <a href="{{ route('app.feed.recommended') }}" class="btn btn-outline-theme">Browse Recommended</a>
                         </div>
-                        <div class="d-flex flex-wrap gap-2 mt-3">
-                            <span class="badge rounded-pill text-bg-light border">Role: {{ $preference?->role ?: 'not set' }}</span>
-                            <span class="badge rounded-pill text-bg-light border">Goal: {{ $preference?->goal ?: 'not set' }}</span>
-                            <span class="badge rounded-pill text-bg-light border">Completion: {{ $completionRate }}%</span>
+                        {{-- Footer: role / goal / completion --}}
+                        <div class="border-top mt-4 pt-3 d-flex flex-wrap gap-2 gap-lg-3 small text-secondary">
+                            <span><i class="bi bi-person me-1"></i>{{ $preference?->role ?: 'No role set' }}</span>
+                            <span class="d-none d-md-inline">&middot;</span>
+                            <span><i class="bi bi-bullseye me-1"></i>{{ $preference?->goal ?: 'No goal set' }}</span>
+                            <span class="d-none d-md-inline">&middot;</span>
+                            <span><i class="bi bi-check-circle me-1"></i>{{ $completionRate }}% complete</span>
                         </div>
-                    </div>
-                    <!-- Active course card -->
-                    <div class="col-12 col-md-6 col-lg-3">
-                        @if ($activeModule)
-                            <div class="card adminuiux-card shadow-sm overflow-hidden">
-                                <div class="card-body">
-                                    <figure class="height-120 w-100 coverimg rounded mb-3">
-                                        <img src="{{ asset('vendor/learninguiux/img/learning/banner.png') }}" alt="{{ $activeModule->title }}">
-                                    </figure>
-                                    <h6 class="mb-0">{{ $activeModule->title }}</h6>
-                                    <p class="small text-secondary">{{ ucfirst(str_replace('_', ' ', $activeModule->topic ?? 'Course')) }}</p>
-                                    <div class="row gx-3 align-items-center">
-                                        <div class="col">
-                                            <p class="text-secondary small mb-0"><i class="bi bi-file-play"></i> {{ $activeProgress }}% complete</p>
-                                        </div>
-                                        <div class="col-auto">
-                                            <a href="{{ route('app.modules.show', ['module' => $activeModule->id]) }}" class="btn btn-sm btn-square btn-success"><i class="bi bi-play"></i></a>
-                                        </div>
-                                    </div>
-                                    <div class="progress position-absolute w-100 bottom-0 start-0 rounded-0" style="height:5px;" role="progressbar" aria-label="Course progress" aria-valuenow="{{ $activeProgress }}" aria-valuemin="0" aria-valuemax="100">
-                                        <div class="progress-bar progress-bar-striped bg-success" style="width: {{ $activeProgress }}%"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        @else
-                            <div class="card adminuiux-card shadow-sm">
-                                <div class="card-body text-center py-5">
-                                    <div class="avatar avatar-60 rounded-circle bg-theme-1-subtle text-theme-1 h3 mb-3 mx-auto">
-                                        <i class="bi bi-mortarboard"></i>
-                                    </div>
-                                    <p class="small text-secondary mb-0">No active course yet</p>
-                                    <a href="{{ route('app.feed.required') }}" class="btn btn-theme btn-sm mt-3">Start a course</a>
-                                </div>
-                            </div>
-                        @endif
                     </div>
                 </div>
 
@@ -294,57 +287,39 @@
                     </div>
                 </div>
 
-                {{-- Gamification Widget --}}
-                @if (isset($gamification))
-                    <div class="mb-1">
-                        <span class="text-uppercase fw-semibold text-secondary" style="font-size: .7rem; letter-spacing: .08em;">Your Progress</span>
-                    </div>
-                    @include('app.partials.gamification-widget', ['gamification' => $gamification])
-                @endif
-
-                @if (($assignedCourses ?? collect())->isNotEmpty())
-                    <div class="card learner-panel-card mb-4">
-                        <div class="card-body p-4 p-lg-5">
-                            <div class="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-4">
-                                <div>
-                                    <span class="learner-section-title d-inline-block mb-2">Your Courses</span>
-                                    <h3 class="mb-1">Continue your learning</h3>
-                                    <p class="text-secondary mb-0">Courses assigned to you based on your role.</p>
-                                </div>
+                <div class="card learner-panel-card mb-4">
+                    <div class="card-body p-4 p-lg-5">
+                        <div class="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-4">
+                            <div>
+                                <span class="learner-section-title d-inline-block mb-2">Your Courses</span>
+                                <h3 class="mb-1">{{ ($assignedCourses ?? collect())->isNotEmpty() ? 'Continue your learning' : 'You\'re all caught up' }}</h3>
+                                <p class="text-secondary mb-0">
+                                    {{ ($assignedCourses ?? collect())->isNotEmpty()
+                                        ? 'Courses assigned to you that still need completing.'
+                                        : 'All your assigned courses are complete. Browse for more learning below.' }}
+                                </p>
                             </div>
+                        </div>
+                        @if (($assignedCourses ?? collect())->isNotEmpty())
                             <div class="row">
                                 @foreach ($assignedCourses as $course)
                                     @include('app.partials.feed-course-card', ['course' => $course])
                                 @endforeach
                             </div>
-                        </div>
-                    </div>
-                @endif
-
-                <div class="card learner-panel-card mb-4">
-                    <div class="card-body p-4 p-lg-5">
-                        <span class="learner-section-title d-inline-block mb-2">Recent Activity</span>
-                        <h3 class="mb-1">Learning timeline</h3>
-                        <p class="text-secondary mb-4">Your latest learning interactions tracked from learner progress records.</p>
-                        <div class="row g-3">
-                            @forelse ($recentLearningActivity->take(5) as $activity)
-                                <div class="col">
-                                    <div class="rounded-4 border bg-light p-4 h-100">
-                                        <div class="small text-secondary mb-1">{{ optional($activity['occurred_at'])->diffForHumans() }}</div>
-                                        <div class="fw-semibold fs-5 mt-1">{{ $activity['module_title'] }}</div>
-                                        <p class="small text-secondary mb-0 mt-2">{{ $activity['summary'] }}</p>
-                                    </div>
+                        @else
+                            <div class="text-center py-4">
+                                <div class="avatar avatar-60 rounded-circle bg-success-subtle text-success h3 mb-3 mx-auto">
+                                    <i class="bi bi-check-circle"></i>
                                 </div>
-                            @empty
-                                <div class="col-12">
-                                    <div class="rounded-4 border bg-light p-4 text-secondary">
-                                        No recent learner activity has been recorded yet.
-                                    </div>
+                                <p class="text-secondary mb-3">No outstanding courses — well done!</p>
+                                <div class="d-flex flex-wrap gap-2 justify-content-center">
+                                    <a href="{{ route('app.feed.required') }}" class="btn btn-sm btn-outline-theme">View All Courses</a>
                                 </div>
-                            @endforelse
-                        </div>
+                            </div>
+                        @endif
                     </div>
                 </div>
+
             @endif
         </div>
     </main>

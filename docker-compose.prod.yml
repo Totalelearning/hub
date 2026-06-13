@@ -1,0 +1,49 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/production/Dockerfile
+    container_name: totale-learning-app
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
+    env_file:
+      - .env.production
+    volumes:
+      - app-storage:/var/www/html/storage
+    depends_on:
+      pgsql:
+        condition: service_healthy
+    networks:
+      - totale
+
+  pgsql:
+    image: pgvector/pgvector:pg16
+    container_name: totale-learning-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-totale_learning}
+      POSTGRES_USER: ${DB_USERNAME:-totale}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+    volumes:
+      - pgsql-data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-totale}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - totale
+
+volumes:
+  app-storage:
+  pgsql-data:
+
+networks:
+  totale:
+    driver: bridge

@@ -16,19 +16,13 @@
             {{-- Hero --}}
             <div class="mb-4 admin-feed-hero">
                 <div class="row align-items-center g-0 p-4 p-lg-5">
-                    <div class="col-12 col-lg-8 admin-feed-hero-copy mb-3 mb-lg-0">
+                    <div class="col-12 col-lg-8 admin-feed-hero-copy">
                         <div class="text-uppercase fw-semibold text-primary mb-2" style="letter-spacing:.3em;font-size:.72rem;">Learning Journeys</div>
                         <h1 class="fs-3 fw-semibold mb-2">{{ __('Learning Paths') }}</h1>
-                        <nav aria-label="breadcrumb">
-                            <ol class="breadcrumb small mb-2">
-                                <li class="breadcrumb-item"><a href="{{ route('app.admin.assignments') }}">Dashboard</a></li>
-                                <li class="breadcrumb-item active" aria-current="page">Learning Paths</li>
-                            </ol>
-                        </nav>
-                        <p class="text-secondary mb-0">Manage ordered role-based learning paths and the sequence learners move through.</p>
-                    </div>
-                    <div class="col-12 col-lg-4 d-flex flex-wrap gap-2 justify-content-lg-end">
-                        <a href="{{ route('app.admin.paths.create') }}" class="btn btn-theme">Create Path</a>
+                        <p class="text-secondary mb-3">Manage ordered role-based learning paths and the sequence learners move through.</p>
+                        <div class="d-flex flex-wrap gap-2">
+                            <a href="{{ route('app.admin.paths.create') }}" class="btn btn-theme btn-sm"><i class="bi bi-plus me-1"></i>Create Path</a>
+                        </div>
                     </div>
                 </div>
             </div>

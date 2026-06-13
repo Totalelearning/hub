@@ -12,9 +12,9 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a href="{{ route('app.feed.required') }}" class="nav-link {{ $active === 'required' ? 'active' : '' }}">
+                <a href="{{ route('app.feed.required') }}" class="nav-link {{ $active === 'courses' ? 'active' : '' }}">
                     <i class="menu-icon bi bi-journal-check"></i>
-                    <span class="menu-name">Required</span>
+                    <span class="menu-name">Courses</span>
                 </a>
             </li>
             <li class="nav-item">
@@ -23,18 +23,7 @@
                     <span class="menu-name">Paths</span>
                 </a>
             </li>
-            <li class="nav-item">
-                <a href="{{ route('app.feed.saved') }}" class="nav-link {{ $active === 'saved' ? 'active' : '' }}">
-                    <i class="menu-icon bi bi-bookmark-heart"></i>
-                    <span class="menu-name">Saved</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="{{ route('app.feed.recommended') }}" class="nav-link {{ $active === 'recommended' ? 'active' : '' }}">
-                    <i class="menu-icon bi bi-stars"></i>
-                    <span class="menu-name">Recommended</span>
-                </a>
-            </li>
+            {{-- Saved and Recommended hidden for now --}}
             <li class="nav-item">
                 <a href="{{ route('app.leaderboard') }}" class="nav-link {{ $active === 'leaderboard' ? 'active' : '' }}">
                     <i class="menu-icon bi bi-trophy"></i>
@@ -53,12 +42,7 @@
                     <span class="menu-name">Reminders</span>
                 </a>
             </li>
-            <li class="nav-item">
-                <a href="{{ route('app.preferences') }}" class="nav-link {{ $active === 'preferences' ? 'active' : '' }}">
-                    <i class="menu-icon bi bi-sliders"></i>
-                    <span class="menu-name">Preferences</span>
-                </a>
-            </li>
+            {{-- Preferences hidden for now --}}
         </ul>
     </div>
 </div>

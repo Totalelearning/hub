@@ -71,6 +71,10 @@ class MagicLinkController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('app.feed', absolute: false));
+        $defaultRoute = $user->isParent()
+            ? route('app.parent.dashboard', absolute: false)
+            : route('app.feed', absolute: false);
+
+        return redirect()->intended($defaultRoute);
     }
 }
