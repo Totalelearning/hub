@@ -216,6 +216,7 @@ class PrototypeDemoSeeder extends Seeder
                 'name' => 'Admin',
                 'password' => Hash::make('password'),
                 'is_admin' => true,
+                'system_role' => 'site_admin',
                 'email_verified_at' => now(),
             ],
         );
