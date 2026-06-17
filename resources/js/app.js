@@ -1,11 +1,5 @@
 import './bootstrap';
 
-import Alpine from 'alpinejs';
-
-window.Alpine = Alpine;
-
-Alpine.start();
-
 function initializeUserBulkSelection() {
     document.querySelectorAll('[data-user-bulk-form]').forEach((form) => {
         const checkboxes = Array.from(document.querySelectorAll('[data-user-bulk-checkbox][form="' + form.id + '"]'));
