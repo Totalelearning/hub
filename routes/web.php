@@ -15,6 +15,7 @@ use App\Http\Controllers\AdminLearningModuleController;
 use App\Http\Controllers\AdminRankingSettingsController;
 use App\Http\Controllers\AdminReminderSettingsController;
 use App\Http\Controllers\AdminRolesTeamsController;
+use App\Http\Controllers\AdminScoreController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\AppBadgesController;
 use App\Http\Controllers\AppFeedController;
@@ -263,6 +264,23 @@ Route::prefix('app')->middleware('auth')->group(function () {
         ->name('app.admin.courses.destroy');
     Route::post('admin/courses/bulk-transition', [AdminCourseController::class, 'bulkTransition'])
         ->name('app.admin.courses.bulk-transition');
+
+    Route::get('admin/users/{user}/scores', [AdminScoreController::class, 'userScores'])
+        ->whereNumber('user')
+        ->name('app.admin.scores.user');
+    Route::get('admin/courses/{course}/scores', [AdminScoreController::class, 'courseScores'])
+        ->name('app.admin.scores.course');
+    Route::patch('admin/users/{user}/scores/course/{course}', [AdminScoreController::class, 'updateCourseEnrolment'])
+        ->whereNumber('user')
+        ->name('app.admin.scores.update-enrolment');
+    Route::patch('admin/users/{user}/scores/module/{module}', [AdminScoreController::class, 'updateModuleProgress'])
+        ->whereNumber('user')
+        ->whereNumber('module')
+        ->name('app.admin.scores.update-module');
+    Route::patch('admin/scores/reinforcement/{attempt}', [AdminScoreController::class, 'updateReinforcement'])
+        ->whereNumber('attempt')
+        ->name('app.admin.scores.update-reinforcement');
+
     Route::get('admin/course-analytics', [AdminCourseAnalyticsController::class, 'index'])
         ->name('app.admin.course-analytics');
     Route::get('admin/course-analytics/export', [AdminCourseAnalyticsController::class, 'export'])

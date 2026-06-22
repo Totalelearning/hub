@@ -148,6 +148,9 @@ class DemoComplianceDataSeeder extends Seeder
         // Step 6: Create demo manager users
         $this->createManagerUsers();
 
+        // Step 7: Assign locations to all users who don't have one
+        $this->assignLocations();
+
         $this->command->info('Demo compliance data seeded successfully.');
     }
 
@@ -204,6 +207,40 @@ class DemoComplianceDataSeeder extends Seeder
         );
 
         $this->command->info('Created 3 demo manager users (SLT Manager, IT Manager, HR Manager).');
+    }
+
+    private function assignLocations(): void
+    {
+        $locationIds = DB::table('locations')
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->pluck('id')
+            ->toArray();
+
+        if (empty($locationIds)) {
+            $this->command->warn('No active locations found. Skipping location assignment.');
+
+            return;
+        }
+
+        $usersWithoutLocation = DB::table('user_preferences')
+            ->whereNull('location_id')
+            ->pluck('user_id')
+            ->toArray();
+
+        $assigned = 0;
+
+        foreach ($usersWithoutLocation as $i => $userId) {
+            $locationId = $locationIds[$i % count($locationIds)];
+
+            DB::table('user_preferences')
+                ->where('user_id', $userId)
+                ->update(['location_id' => $locationId]);
+
+            $assigned++;
+        }
+
+        $this->command->info("Assigned locations to {$assigned} users across " . count($locationIds) . ' locations.');
     }
 
     private function createUsers(): array

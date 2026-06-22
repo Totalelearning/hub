@@ -372,6 +372,7 @@
                                                         <a class="btn btn-sm btn-link btn-square no-caret modules-directory-menu" data-bs-toggle="dropdown"><i class="bi bi-three-dots fs-5"></i></a>
                                                         <ul class="dropdown-menu dropdown-menu-end">
                                                             <li><a class="dropdown-item" href="{{ route('app.admin.courses.edit', $course) }}">Edit course</a></li>
+                                                            <li><a class="dropdown-item" href="{{ route('app.admin.scores.course', $course) }}">View scores</a></li>
                                                             <li>
                                                                 <form action="{{ route('app.admin.courses.destroy', $course) }}" method="POST" onsubmit="return confirm('Delete this course?')">
                                                                     @csrf

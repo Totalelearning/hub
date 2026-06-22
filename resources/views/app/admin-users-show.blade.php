@@ -30,6 +30,7 @@
                     </div>
                     <div class="col-12 col-lg-5 d-flex flex-wrap gap-2 justify-content-lg-end">
                         <a href="{{ route('app.admin.users.edit', ['user' => $managedUser->id]) }}" class="btn btn-theme btn-sm">Edit User</a>
+                        <a href="{{ route('app.admin.scores.user', ['user' => $managedUser->id]) }}" class="btn btn-outline-theme btn-sm">Scores</a>
                         <a href="{{ route('app.admin.assignments.user', ['user' => $managedUser->id]) }}" class="btn btn-outline-theme btn-sm">Learner Detail</a>
                         <a href="{{ route('app.admin.assignments.audit', ['target' => $managedUser->id]) }}" class="btn btn-outline-theme btn-sm">Open Audit</a>
                         <a href="{{ route('app.admin.users.show.export', ['user' => $managedUser->id]) }}" class="btn btn-outline-theme btn-sm">Export CSV</a>

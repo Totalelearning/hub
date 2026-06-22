@@ -170,7 +170,7 @@ return new class extends Migration
                 'slug' => $slug,
                 'description' => $course['description'],
                 'topic' => $course['topic'],
-                'status' => 'draft',
+                'status' => 'published',
                 'target_roles' => json_encode($course['target_roles']),
                 'sort_order' => $i,
                 'created_at' => $now,
