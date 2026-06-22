@@ -261,10 +261,6 @@
             const emailValue = emailInput ? emailInput.value.trim() : '';
             const passwordValue = passwordInput ? passwordInput.value : '';
 
-            if (emailInput) {
-                emailInput.value = emailValue;
-            }
-
             if (emailValue === '' || passwordValue.trim() === '') {
                 event.preventDefault();
 
@@ -277,13 +273,20 @@
                 return;
             }
 
-            if (emailInput) {
-                emailInput.value = toBase64(emailValue);
-            }
+            emailInput.removeAttribute('name');
+            passwordInput.removeAttribute('name');
 
-            if (passwordInput) {
-                passwordInput.value = toBase64(passwordValue);
-            }
+            var hiddenEmail = document.createElement('input');
+            hiddenEmail.type = 'hidden';
+            hiddenEmail.name = 'email';
+            hiddenEmail.value = toBase64(emailValue);
+            form.appendChild(hiddenEmail);
+
+            var hiddenPassword = document.createElement('input');
+            hiddenPassword.type = 'hidden';
+            hiddenPassword.name = 'password';
+            hiddenPassword.value = toBase64(passwordValue);
+            form.appendChild(hiddenPassword);
 
             if (encodingInput) {
                 encodingInput.value = 'base64';

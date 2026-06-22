@@ -55,6 +55,9 @@
                             <p class="text-secondary mb-0">SCORM prototype launch. Runtime progress is tracked into the existing module progress model.</p>
                         </div>
                         <div class="d-flex flex-wrap gap-2">
+                            <button onclick="toggleFullscreen()" class="btn btn-outline-theme btn-sm" id="fullscreen-btn">
+                                <i class="bi bi-arrows-fullscreen me-1"></i>Full Screen
+                            </button>
                             <a href="{{ route('app.modules.show', ['module' => $module->id]) }}" class="btn btn-outline-theme btn-sm">Back to Module</a>
                             <a href="{{ route('app.feed') }}" class="btn btn-theme btn-sm">Learner Dashboard</a>
                         </div>
@@ -132,9 +135,11 @@
             <div class="card learner-launch-frame">
                 <div class="card-body p-2 p-lg-3">
                     <iframe
+                        id="scorm-frame"
                         src="{{ $launchUrl }}"
                         title="{{ $module->title }} SCORM content"
                         style="width: 100%; min-height: 720px; border: 0; border-radius: 22px; background: #fff;"
+                        allowfullscreen
                     ></iframe>
                 </div>
             </div>
@@ -165,3 +170,24 @@
     </main>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    function toggleFullscreen() {
+        var frame = document.getElementById('scorm-frame');
+        if (!document.fullscreenElement) {
+            frame.requestFullscreen().catch(function() {});
+        } else {
+            document.exitFullscreen();
+        }
+    }
+    document.addEventListener('fullscreenchange', function() {
+        var btn = document.getElementById('fullscreen-btn');
+        if (document.fullscreenElement) {
+            btn.innerHTML = '<i class="bi bi-fullscreen-exit me-1"></i>Exit Full Screen';
+        } else {
+            btn.innerHTML = '<i class="bi bi-arrows-fullscreen me-1"></i>Full Screen';
+        }
+    });
+</script>
+@endpush
