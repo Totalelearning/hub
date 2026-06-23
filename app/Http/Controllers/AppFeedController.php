@@ -443,7 +443,7 @@ class AppFeedController extends Controller
 
         $assignedCourses = Course::query()
             ->where('status', 'published')
-            ->whereHas('assignedUsers', fn ($q) => $q->where('user_id', $userId))
+            ->whereHas('assignedUsers', fn ($q) => $q->where('user_id', $userId)->where('status', '!=', 'completed'))
             ->withCount('modules')
             ->with('modules:id,title')
             ->orderByDesc('updated_at')

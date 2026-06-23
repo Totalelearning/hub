@@ -292,11 +292,11 @@
                         <div class="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-4">
                             <div>
                                 <span class="learner-section-title d-inline-block mb-2">Your Courses</span>
-                                <h3 class="mb-1">{{ ($assignedCourses ?? collect())->isNotEmpty() ? 'Your courses' : 'No courses assigned' }}</h3>
+                                <h3 class="mb-1">{{ ($assignedCourses ?? collect())->isNotEmpty() ? 'Continue your learning' : 'You\'re all caught up' }}</h3>
                                 <p class="text-secondary mb-0">
                                     {{ ($assignedCourses ?? collect())->isNotEmpty()
-                                        ? 'All courses assigned to you.'
-                                        : 'You don\'t have any courses assigned yet.' }}
+                                        ? 'Courses assigned to you that still need completing.'
+                                        : 'All your assigned courses are complete. Browse for more learning below.' }}
                                 </p>
                             </div>
                         </div>
@@ -311,7 +311,7 @@
                                 <div class="avatar avatar-60 rounded-circle bg-success-subtle text-success h3 mb-3 mx-auto">
                                     <i class="bi bi-check-circle"></i>
                                 </div>
-                                <p class="text-secondary mb-3">No courses have been assigned to you yet.</p>
+                                <p class="text-secondary mb-3">No outstanding courses — well done!</p>
                                 <div class="d-flex flex-wrap gap-2 justify-content-center">
                                     <a href="{{ route('app.feed.required') }}" class="btn btn-sm btn-outline-theme">View All Courses</a>
                                 </div>
