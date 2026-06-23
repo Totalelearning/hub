@@ -133,7 +133,7 @@ class AdminScoreController extends Controller
         return back()->with('status', "Course enrolment for \"{$course->title}\" updated.");
     }
 
-    public function updateModuleProgress(Request $request, User $user, LearningModule $module): RedirectResponse
+    public function updateModuleProgress(Request $request, User $user, LearningModule $learning_module): RedirectResponse
     {
         Gate::authorize('admin-write');
 
@@ -158,11 +158,11 @@ class AdminScoreController extends Controller
         }
 
         ModuleProgress::updateOrCreate(
-            ['user_id' => $user->id, 'learning_module_id' => $module->id],
+            ['user_id' => $user->id, 'learning_module_id' => $learning_module->id],
             array_merge($data, ['last_activity_at' => now()]),
         );
 
-        return back()->with('status', "Module progress for \"{$module->title}\" updated.");
+        return back()->with('status', "Module progress for \"{$learning_module->title}\" updated.");
     }
 
     public function updateReinforcement(Request $request, CourseReinforcementAttempt $attempt): RedirectResponse

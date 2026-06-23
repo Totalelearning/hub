@@ -273,9 +273,9 @@ Route::prefix('app')->middleware('auth')->group(function () {
     Route::patch('admin/users/{user}/scores/course/{course}', [AdminScoreController::class, 'updateCourseEnrolment'])
         ->whereNumber('user')
         ->name('app.admin.scores.update-enrolment');
-    Route::patch('admin/users/{user}/scores/module/{module}', [AdminScoreController::class, 'updateModuleProgress'])
+    Route::patch('admin/users/{user}/scores/module/{learning_module}', [AdminScoreController::class, 'updateModuleProgress'])
         ->whereNumber('user')
-        ->whereNumber('module')
+        ->whereNumber('learning_module')
         ->name('app.admin.scores.update-module');
     Route::patch('admin/scores/reinforcement/{attempt}', [AdminScoreController::class, 'updateReinforcement'])
         ->whereNumber('attempt')

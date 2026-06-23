@@ -204,7 +204,7 @@
                                                         $modStatus = $mp?->status ?? 'not_started';
                                                         $modPct = $mp?->percent_complete ?? 0;
                                                     @endphp
-                                                    <form method="POST" action="{{ route('app.admin.scores.update-module', [$enrolment->user_id, $mod->id]) }}" class="score-edit-row">
+                                                    <form method="POST" action="{{ route('app.admin.scores.update-module', ['user' => $enrolment->user_id, 'learning_module' => $mod->id]) }}" class="score-edit-row">
                                                         @csrf
                                                         @method('PATCH')
                                                         <div class="score-edit-label" title="{{ $mod->title }}">{{ $mod->title }}</div>

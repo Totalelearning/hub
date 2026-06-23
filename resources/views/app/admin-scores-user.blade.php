@@ -164,7 +164,7 @@
                                                     <button class="btn btn-xs btn-outline-secondary" x-show="!editing" @click="editing = true">Edit</button>
                                                 </td>
                                                 <td colspan="4" x-show="editing" x-cloak>
-                                                    <form method="POST" action="{{ route('app.admin.scores.update-module', [$user, $mod->module_id]) }}" class="d-flex gap-2 align-items-center">
+                                                    <form method="POST" action="{{ route('app.admin.scores.update-module', ['user' => $user, 'learning_module' => $mod->module_id]) }}" class="d-flex gap-2 align-items-center">
                                                         @csrf
                                                         @method('PATCH')
                                                         <select name="status" class="form-select form-select-sm" style="width:auto;">
