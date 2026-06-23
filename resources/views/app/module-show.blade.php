@@ -237,42 +237,8 @@
                                             <i class="bi bi-play-circle me-1"></i> Launch SCORM Prototype
                                         </a>
                                     @endif
-                                    @if ($isSaved ?? false)
-                                        <form method="POST" action="{{ route('app.feed.unsave', ['module' => $module->id]) }}">
-                                            @csrf
-                                            <button type="submit" class="btn btn-outline-theme">
-                                                <i class="bi bi-bookmark-check me-1"></i> Saved
-                                            </button>
-                                        </form>
-                                    @else
-                                        <form method="POST" action="{{ route('app.feed.save', ['module' => $module->id]) }}">
-                                            @csrf
-                                            <button type="submit" class="btn btn-outline-theme">
-                                                <i class="bi bi-bookmark me-1"></i> Save module
-                                            </button>
-                                        </form>
-                                    @endif
-                                    <a href="{{ route('app.reminders', ['module_id' => $module->id]) }}" class="btn btn-outline-theme">
-                                        <i class="bi bi-bell me-1"></i> Open reminders
-                                    </a>
                                     <a href="{{ route('app.feed') }}" class="btn btn-outline-theme">Back to dashboard</a>
                                 </div>
-                                <div class="rounded-4 border bg-light p-3 mt-3">
-                                    <div class="small text-secondary">Next action</div>
-                                    <div class="small text-secondary mt-1">{{ $moduleActionSummary['last_activity_summary'] }}</div>
-                                    <div class="d-flex flex-wrap gap-2 mt-3">
-                                        <a href="{{ $moduleActionSummary['next_action_href'] ?? '#module-summary' }}" class="btn {{ $primaryButtonClass }} btn-sm">{{ $moduleActionSummary['next_action_label'] }}</a>
-                                        <a href="{{ $moduleActionSummary['reminder_href'] }}" class="btn btn-outline-theme btn-sm">Module reminders</a>
-                                    </div>
-                                </div>
-                                @if (($completionNextActions ?? collect())->isNotEmpty())
-                                    <div class="rounded-4 border bg-light p-3 mt-3">
-                                        <div class="small text-secondary">After this module</div>
-                                        <div class="small text-secondary mt-1">
-                                            {{ $progressStatus === 'completed' ? 'Completion is already recorded, so you can move directly into the next learner action.' : 'Once this module is complete, your next learner actions will appear here automatically.' }}
-                                        </div>
-                                    </div>
-                                @endif
                             </div>
                         </div>
                     </div>
