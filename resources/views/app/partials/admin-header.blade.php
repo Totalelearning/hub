@@ -53,10 +53,10 @@
 
                 {{-- Dark mode toggle (hidden) --}}
 
-                {{-- Learner view button (site admin only) --}}
-                @if (auth()->user()?->isSiteAdmin())
+                {{-- Learner view button (all admin-access roles) --}}
+                @can('admin-access')
                 <a href="{{ route('app.feed') }}" class="btn btn-outline-theme btn-sm mx-1 d-none d-sm-inline-flex">Learner view</a>
-                @endif
+                @endcan
 
                 {{-- Profile dropdown --}}
                 @auth

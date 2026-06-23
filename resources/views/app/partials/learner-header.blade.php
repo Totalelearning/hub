@@ -84,9 +84,11 @@
                         <a class="dropdown-item" href="{{ route('app.preferences') }}">
                             <i data-feather="settings" class="avatar avatar-18 me-1"></i> Preferences
                         </a>
+                        @can('admin-access')
                         <a class="dropdown-item" href="{{ route('app.admin.assignments') }}">
                             <i data-feather="shield" class="avatar avatar-18 me-1"></i> Admin View
                         </a>
+                        @endcan
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
                             <button type="submit" class="dropdown-item theme-red">
