@@ -7,7 +7,7 @@
     $progressPercent = $course->course_progress_percent ?? 0;
     $completedModules = $course->course_completed_modules ?? 0;
     $enrolmentStatus = $course->enrolment_status ?? null;
-    $isCompleted = $enrolmentStatus === 'completed' || $progressPercent === 100;
+    $isCompleted = $enrolmentStatus === 'completed';
 @endphp
 
 <div class="col-12 col-md-6 col-xl-3 mb-4">
