@@ -443,7 +443,7 @@ class AppFeedController extends Controller
 
         $assignedCourses = Course::query()
             ->where('status', 'published')
-            ->whereHas('assignedUsers', fn ($q) => $q->where('user_id', $userId)->where('status', '!=', 'completed'))
+            ->whereHas('assignedUsers', fn ($q) => $q->where('user_id', $userId))
             ->withCount('modules')
             ->with('modules:id,title')
             ->orderByDesc('updated_at')
@@ -457,7 +457,12 @@ class AppFeedController extends Controller
                 ->get()
                 ->keyBy('learning_module_id');
 
-            $assignedCourses->each(function ($course) use ($progressMap) {
+            $enrolmentStatusMap = \Illuminate\Support\Facades\DB::table('course_user')
+                ->where('user_id', $userId)
+                ->whereIn('course_id', $assignedCourses->pluck('id'))
+                ->pluck('status', 'course_id');
+
+            $assignedCourses->each(function ($course) use ($progressMap, $enrolmentStatusMap) {
                 $moduleIds = $course->modules->pluck('id');
                 $total = $moduleIds->count();
                 $completed = $moduleIds->filter(fn ($id) => ($progressMap->get($id)?->status ?? '') === 'completed')->count();
@@ -466,6 +471,7 @@ class AppFeedController extends Controller
                     : 0;
                 $course->setAttribute('course_progress_percent', $avgPercent);
                 $course->setAttribute('course_completed_modules', $completed);
+                $course->setAttribute('enrolment_status', $enrolmentStatusMap->get($course->id));
             });
         }
 
