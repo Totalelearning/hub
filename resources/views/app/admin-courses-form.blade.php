@@ -17,6 +17,25 @@
         background-color: rgba(219, 234, 254, 0.6);
         border-color: rgba(59, 130, 246, 0.4) !important;
     }
+
+    .module-order-item {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        padding: .5rem .75rem;
+        margin-bottom: .25rem;
+        border: 1px solid #dee2e6;
+        border-radius: .5rem;
+        background: #fff;
+        cursor: grab;
+        user-select: none;
+    }
+    .module-order-item.dragging { opacity: .4; }
+    .module-order-handle { color: #adb5bd; font-size: 1.1rem; cursor: grab; }
+    .module-order-number { font-weight: 600; color: #6c757d; min-width: 1.5rem; }
+    .module-order-title { flex: 1; font-size: .875rem; }
+    .module-order-buttons { display: flex; gap: .25rem; }
+    .module-order-buttons .btn { padding: .125rem .375rem; line-height: 1; }
 </style>
 @endpush
 
@@ -243,15 +262,43 @@
                     </div>
                 </div>
 
-                {{-- Right: module picker (no form wrapper) --}}
+                {{-- Right: module picker + ordering --}}
                 <div class="col-lg-7">
+
+                    {{-- Module order panel --}}
+                    <div class="card adminuiux-card shadow-sm mb-3" id="module-order-card" style="{{ count($selectedModuleIds) ? '' : 'display:none;' }}">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="fw-semibold mb-0">Module Order</h5>
+                                <span class="badge bg-primary-subtle text-primary" id="selected-count">{{ count($selectedModuleIds) }} selected</span>
+                            </div>
+                            <p class="small text-secondary mb-3">Drag or use arrows to set the order learners will see modules in this course.</p>
+                            <div id="module-order-list">
+                                @php
+                                    $orderedModules = collect($selectedModuleIds)->map(fn($id) => $modules->firstWhere('id', $id))->filter();
+                                @endphp
+                                @foreach ($orderedModules as $om)
+                                    <div class="module-order-item" data-id="{{ $om->id }}">
+                                        <span class="module-order-handle" title="Drag to reorder"><i class="bi bi-grip-vertical"></i></span>
+                                        <span class="module-order-number"></span>
+                                        <span class="module-order-title">{{ $om->title }}</span>
+                                        <span class="module-order-buttons">
+                                            <button type="button" class="btn btn-sm btn-outline-secondary btn-order-up" onclick="moduleOrderMove(this,-1)" title="Move up"><i class="bi bi-chevron-up"></i></button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary btn-order-down" onclick="moduleOrderMove(this,1)" title="Move down"><i class="bi bi-chevron-down"></i></button>
+                                        </span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Module picker --}}
                     <div class="card adminuiux-card shadow-sm">
                         <div class="card-body p-4">
                             <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h5 class="fw-semibold mb-0">Modules</h5>
-                                <span class="badge bg-primary-subtle text-primary" id="selected-count">{{ count($selectedModuleIds) }} selected</span>
+                                <h5 class="fw-semibold mb-0">Add Modules</h5>
                             </div>
-                            <p class="small text-secondary mb-3">Select the modules that make up this course. Each module should be 2&ndash;3 minutes.</p>
+                            <p class="small text-secondary mb-3">Tick modules to add them to the course. Each module should be 2&ndash;3 minutes.</p>
 
                             <div class="d-flex gap-2 mb-3">
                                 <input type="text" class="form-control form-control-sm" id="module-search" placeholder="Search modules...">
@@ -267,10 +314,10 @@
 
                             <div style="max-height: 500px; overflow-y: auto;">
                                 @foreach ($modules as $module)
-                                    <label class="d-flex align-items-center gap-3 rounded-3 border p-3 mb-2 course-module-item {{ in_array($module->id, $selectedModuleIds) ? 'selected' : '' }}" data-title="{{ strtolower($module->title) }}" data-topic="{{ strtolower($module->topic ?? '') }}">
+                                    <label class="d-flex align-items-center gap-3 rounded-3 border p-3 mb-2 course-module-item {{ in_array($module->id, $selectedModuleIds) ? 'selected' : '' }}" data-title="{{ strtolower($module->title) }}" data-topic="{{ strtolower($module->topic ?? '') }}" data-module-title="{{ $module->title }}">
                                         <input type="checkbox" value="{{ $module->id }}" class="form-check-input mt-0 module-checkbox"
                                             {{ in_array($module->id, $selectedModuleIds) ? 'checked' : '' }}
-                                            onchange="this.closest('.course-module-item').classList.toggle('selected',this.checked);window.courseUpdateCount()">
+                                            onchange="this.closest('.course-module-item').classList.toggle('selected',this.checked);window.moduleSelectionChanged(this)">
                                         <div class="flex-grow-1">
                                             <div class="fw-medium">{{ $module->title }}</div>
                                             <div class="small text-secondary">
@@ -319,9 +366,90 @@ window.courseFilterClear = function () {
 
 window.courseUpdateCount = function () {
     var countBadge = document.getElementById('selected-count');
-    var checked = document.querySelectorAll('.module-checkbox:checked').length;
-    if (countBadge) countBadge.textContent = checked + ' selected';
+    var items = document.querySelectorAll('#module-order-list .module-order-item');
+    if (countBadge) countBadge.textContent = items.length + ' selected';
 };
+
+window.moduleSelectionChanged = function (checkbox) {
+    var id = checkbox.value;
+    var title = checkbox.closest('.course-module-item').getAttribute('data-module-title');
+    var list = document.getElementById('module-order-list');
+    var card = document.getElementById('module-order-card');
+
+    if (checkbox.checked) {
+        var item = document.createElement('div');
+        item.className = 'module-order-item';
+        item.setAttribute('data-id', id);
+        item.innerHTML = '<span class="module-order-handle" title="Drag to reorder"><i class="bi bi-grip-vertical"></i></span>' +
+            '<span class="module-order-number"></span>' +
+            '<span class="module-order-title">' + title + '</span>' +
+            '<span class="module-order-buttons">' +
+            '<button type="button" class="btn btn-sm btn-outline-secondary btn-order-up" onclick="moduleOrderMove(this,-1)" title="Move up"><i class="bi bi-chevron-up"></i></button>' +
+            '<button type="button" class="btn btn-sm btn-outline-secondary btn-order-down" onclick="moduleOrderMove(this,1)" title="Move down"><i class="bi bi-chevron-down"></i></button>' +
+            '</span>';
+        list.appendChild(item);
+    } else {
+        var existing = list.querySelector('[data-id="' + id + '"]');
+        if (existing) existing.remove();
+    }
+
+    card.style.display = list.children.length ? '' : 'none';
+    moduleOrderRenumber();
+    window.courseUpdateCount();
+};
+
+window.moduleOrderMove = function (btn, direction) {
+    var item = btn.closest('.module-order-item');
+    var list = item.parentNode;
+    if (direction === -1 && item.previousElementSibling) {
+        list.insertBefore(item, item.previousElementSibling);
+    } else if (direction === 1 && item.nextElementSibling) {
+        list.insertBefore(item.nextElementSibling, item);
+    }
+    moduleOrderRenumber();
+};
+
+function moduleOrderRenumber() {
+    var items = document.querySelectorAll('#module-order-list .module-order-item');
+    for (var i = 0; i < items.length; i++) {
+        items[i].querySelector('.module-order-number').textContent = (i + 1) + '.';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    moduleOrderRenumber();
+
+    var list = document.getElementById('module-order-list');
+    var dragging = null;
+
+    list.addEventListener('dragstart', function (e) {
+        dragging = e.target.closest('.module-order-item');
+        if (dragging) dragging.classList.add('dragging');
+    });
+    list.addEventListener('dragend', function () {
+        if (dragging) dragging.classList.remove('dragging');
+        dragging = null;
+        moduleOrderRenumber();
+    });
+    list.addEventListener('dragover', function (e) {
+        e.preventDefault();
+        var target = e.target.closest('.module-order-item');
+        if (target && target !== dragging) {
+            var rect = target.getBoundingClientRect();
+            var after = e.clientY > rect.top + rect.height / 2;
+            if (after) {
+                list.insertBefore(dragging, target.nextSibling);
+            } else {
+                list.insertBefore(dragging, target);
+            }
+        }
+    });
+
+    var items = list.querySelectorAll('.module-order-item');
+    for (var i = 0; i < items.length; i++) {
+        items[i].setAttribute('draggable', 'true');
+    }
+});
 
 window.courseToggleAllRoles = function (allCheckbox) {
     var boxes = document.querySelectorAll('.role-checkbox');
@@ -362,12 +490,12 @@ window.submitCourseForm = function () {
 
     var container = document.getElementById('hid-modules');
     container.innerHTML = '';
-    var checked = document.querySelectorAll('.module-checkbox:checked');
-    for (var i = 0; i < checked.length; i++) {
+    var ordered = document.querySelectorAll('#module-order-list .module-order-item');
+    for (var i = 0; i < ordered.length; i++) {
         var inp = document.createElement('input');
         inp.type = 'hidden';
         inp.name = 'modules[]';
-        inp.value = checked[i].value;
+        inp.value = ordered[i].getAttribute('data-id');
         container.appendChild(inp);
     }
 
