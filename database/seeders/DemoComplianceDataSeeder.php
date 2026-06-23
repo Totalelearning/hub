@@ -156,6 +156,20 @@ class DemoComplianceDataSeeder extends Seeder
 
     private function createManagerUsers(): void
     {
+        // Trustee — unrestricted cross-location/team view
+        $trustee = User::updateOrCreate(
+            ['email' => 'david.wilson@totalelearning.local'],
+            [
+                'name' => 'David Wilson',
+                'password' => Hash::make('password'),
+                'system_role' => 'trustee',
+            ]
+        );
+        UserPreference::updateOrCreate(
+            ['user_id' => $trustee->id],
+            ['team' => 'Senior Leadership Team (SLT)', 'role' => 'Trustee', 'topics' => json_encode(['governance', 'compliance']), 'goal' => 'Oversee whole-school training outcomes', 'difficulty' => 'advanced']
+        );
+
         // SLT Manager — oversees multiple teams
         $sltManager = User::updateOrCreate(
             ['email' => 'slt.manager@totalelearning.local'],
@@ -206,7 +220,7 @@ class DemoComplianceDataSeeder extends Seeder
             ['team' => 'HR & People', 'role' => 'HR Manager', 'topics' => json_encode(['compliance', 'wellbeing']), 'goal' => 'Ensure HR team compliance', 'difficulty' => 'intermediate']
         );
 
-        $this->command->info('Created 3 demo manager users (SLT Manager, IT Manager, HR Manager).');
+        $this->command->info('Created 4 demo role users (Trustee, SLT Manager, IT Manager, HR Manager).');
     }
 
     private function assignLocations(): void
