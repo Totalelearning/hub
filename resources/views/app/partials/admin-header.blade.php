@@ -53,10 +53,7 @@
 
                 {{-- Dark mode toggle (hidden) --}}
 
-                {{-- Learner view button (all admin-access roles) --}}
-                @can('admin-access')
-                <a href="{{ route('app.feed') }}" class="btn btn-outline-theme btn-sm mx-1 d-none d-sm-inline-flex">Learner view</a>
-                @endcan
+                {{-- Learner view button removed — use profile dropdown instead --}}
 
                 {{-- Profile dropdown --}}
                 @auth
@@ -76,7 +73,7 @@
                             <i data-feather="user" class="avatar avatar-18 me-1"></i> My Profile
                         </a>
                         <a class="dropdown-item" href="{{ route('app.feed') }}">
-                            <i data-feather="layout" class="avatar avatar-18 me-1"></i> Learner View
+                            <i data-feather="layout" class="avatar avatar-18 me-1"></i> My Learning
                         </a>
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
