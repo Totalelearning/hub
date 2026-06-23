@@ -79,7 +79,17 @@
             </div>
 
             {{-- Individual leaderboard --}}
-            <div x-show="tab === 'individual'" x-cloak>
+            <div x-show="tab === 'individual'" x-cloak
+                 x-data="{
+                    perPage: 10,
+                    currentPage: 1,
+                    total: {{ $individuals->count() }},
+                    get totalPages() { return Math.ceil(this.total / this.perPage) },
+                    get from() { return (this.currentPage - 1) * this.perPage },
+                    get to() { return Math.min(this.currentPage * this.perPage, this.total) },
+                    isVisible(index) { return index >= this.from && index < this.to },
+                    goTo(page) { this.currentPage = Math.max(1, Math.min(page, this.totalPages)) }
+                 }">
                 <div class="card leaderboard-card">
                     <div class="card-header px-4 py-3 border-bottom d-flex justify-content-between align-items-center">
                         <span class="leaderboard-section-title">Individual Rankings</span>
@@ -113,8 +123,9 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @foreach ($individuals as $entry)
-                                            <tr class="{{ $entry->id === $currentUserId ? 'leaderboard-row-highlight fw-semibold' : '' }}">
+                                        @foreach ($individuals as $index => $entry)
+                                            <tr x-show="isVisible({{ $index }})"
+                                                class="{{ $entry->id === $currentUserId ? 'leaderboard-row-highlight fw-semibold' : '' }}">
                                                 <td class="ps-4">
                                                     @if ($entry->rank <= 3)
                                                         <span class="badge rounded-pill rank-badge-{{ $entry->rank }}">{{ $entry->rank }}</span>
@@ -146,13 +157,45 @@
                                     </tbody>
                                 </table>
                             </div>
+
+                            {{-- Pagination --}}
+                            <template x-if="totalPages > 1">
+                                <div class="d-flex justify-content-between align-items-center px-4 py-3 border-top">
+                                    <small class="text-secondary">Showing <span x-text="from + 1"></span>–<span x-text="to"></span> of <span x-text="total"></span></small>
+                                    <nav>
+                                        <ul class="pagination pagination-sm mb-0">
+                                            <li class="page-item" :class="currentPage === 1 && 'disabled'">
+                                                <a class="page-link" href="#" @click.prevent="goTo(currentPage - 1)"><i class="bi bi-chevron-left"></i></a>
+                                            </li>
+                                            <template x-for="p in totalPages" :key="p">
+                                                <li class="page-item" :class="p === currentPage && 'active'">
+                                                    <a class="page-link" href="#" x-text="p" @click.prevent="goTo(p)"></a>
+                                                </li>
+                                            </template>
+                                            <li class="page-item" :class="currentPage === totalPages && 'disabled'">
+                                                <a class="page-link" href="#" @click.prevent="goTo(currentPage + 1)"><i class="bi bi-chevron-right"></i></a>
+                                            </li>
+                                        </ul>
+                                    </nav>
+                                </div>
+                            </template>
                         @endif
                     </div>
                 </div>
             </div>
 
             {{-- Team leaderboard --}}
-            <div x-show="tab === 'teams'" x-cloak>
+            <div x-show="tab === 'teams'" x-cloak
+                 x-data="{
+                    perPage: 10,
+                    currentPage: 1,
+                    total: {{ $teamLeaderboard->count() }},
+                    get totalPages() { return Math.ceil(this.total / this.perPage) },
+                    get from() { return (this.currentPage - 1) * this.perPage },
+                    get to() { return Math.min(this.currentPage * this.perPage, this.total) },
+                    isVisible(index) { return index >= this.from && index < this.to },
+                    goTo(page) { this.currentPage = Math.max(1, Math.min(page, this.totalPages)) }
+                 }">
                 <div class="card leaderboard-card">
                     <div class="card-header px-4 py-3 border-bottom">
                         <span class="leaderboard-section-title">Team Rankings</span>
@@ -176,8 +219,8 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @foreach ($teamLeaderboard as $team)
-                                            <tr>
+                                        @foreach ($teamLeaderboard as $index => $team)
+                                            <tr x-show="isVisible({{ $index }})">
                                                 <td class="ps-4">
                                                     @if ($team->rank <= 3)
                                                         <span class="badge rounded-pill rank-badge-{{ $team->rank }}">{{ $team->rank }}</span>
@@ -194,6 +237,28 @@
                                     </tbody>
                                 </table>
                             </div>
+
+                            {{-- Pagination --}}
+                            <template x-if="totalPages > 1">
+                                <div class="d-flex justify-content-between align-items-center px-4 py-3 border-top">
+                                    <small class="text-secondary">Showing <span x-text="from + 1"></span>–<span x-text="to"></span> of <span x-text="total"></span></small>
+                                    <nav>
+                                        <ul class="pagination pagination-sm mb-0">
+                                            <li class="page-item" :class="currentPage === 1 && 'disabled'">
+                                                <a class="page-link" href="#" @click.prevent="goTo(currentPage - 1)"><i class="bi bi-chevron-left"></i></a>
+                                            </li>
+                                            <template x-for="p in totalPages" :key="p">
+                                                <li class="page-item" :class="p === currentPage && 'active'">
+                                                    <a class="page-link" href="#" x-text="p" @click.prevent="goTo(p)"></a>
+                                                </li>
+                                            </template>
+                                            <li class="page-item" :class="currentPage === totalPages && 'disabled'">
+                                                <a class="page-link" href="#" @click.prevent="goTo(currentPage + 1)"><i class="bi bi-chevron-right"></i></a>
+                                            </li>
+                                        </ul>
+                                    </nav>
+                                </div>
+                            </template>
                         @endif
                     </div>
                 </div>
